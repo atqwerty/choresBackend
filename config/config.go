@@ -32,7 +32,7 @@ func GetConf() *Config {
 			Dialect:  getenv("TODO_DB_DIALECT", "mysql"),
 			Name:     getenv("TODO_DB_NAME", "choresdb"),
 			Username: getenv("TODO_DB_USERNAME", "root"),
-			Password: getenv("TODO_DB_PASSWORD", "Savanna1"),
+			Password: getenv("TODO_DB_PASSWORD", "placeholder"),
 			Host:     getenv("TODO_DB_HOST", "localhost"),
 			Port:     getenv("TODO_DB_PORT", "3306"),
 		},
