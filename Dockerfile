@@ -1,20 +1,28 @@
-# We specify the base image we need for our
-# go application
+# Dockerfile References: https://docs.docker.com/engine/reference/builder/
+
+# Start from the latest golang base image
 FROM golang:latest
-# We create an /app directory within our
-# image that will hold our application source
-# files
-RUN mkdir /app
-# We copy everything in the root directory
-# into our /app directory
-ADD . /app
-# We specify that we now wish to execute 
-# any further commands inside our /app
-# directory
+
+# Add Maintainer Info
+LABEL maintainer="Markitanov Denis <dmarkitanov@gmail.com>"
+
+# Set the Current Working Directory inside the container
 WORKDIR /app
-# we run go build to compile the binary
-# executable of our Go program
+
+# Copy go mod and sum files
+COPY go.mod go.sum ./
+
+# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+RUN go mod download
+
+# Copy the source from the current directory to the Working Directory inside the container
+COPY . .
+
+# Build the Go app
 RUN go build -o main .
-# Our start command which kicks off
-# our newly created binary executable
-CMD ["/app/main"]
+
+# Expose port 8080 to the outside world
+EXPOSE 8080
+
+# Command to run the executable
+CMD ["./main"]
