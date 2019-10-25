@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/atqwerty/choresBackend/config"
+	"github.com/atqwerty/choresBackend/app/config"
 )
 
 type Datastore interface {

@@ -8,9 +8,9 @@ import (
 
 	"github.com/atqwerty/choresBackend/app/config"
 	"github.com/atqwerty/choresBackend/app/models"
+	"github.com/atqwerty/choresBackend/app/utils"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/atqwerty/choresBackend/app/utils"
 )
 
 type App struct {
@@ -50,7 +50,7 @@ func (app *App) listTodos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJson(w, http.StatusOK, todos)
+	utils.RespondJSON(w, http.StatusOK, todos)
 }
 
 func (app *App) addTodo(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +74,7 @@ func (app *App) addTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJson(w, http.StatusCreated, todo)
+	utils.RespondJSON(w, http.StatusCreated, todo)
 }
 
 func (app *App) getTodo(w http.ResponseWriter, r *http.Request) {
@@ -90,9 +90,9 @@ func (app *App) getTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJson(w, http.StatusOK, todo)
+	utils.RespondJSON(w, http.StatusOK, todo)
 }
 
 func (app *App) status(w http.ResponseWriter, r *http.Request) {
-	utils.RespondJson(w, http.StatusOK, "API is up and working!")
+	utils.RespondJSON(w, http.StatusOK, "API is up and working!")
 }
