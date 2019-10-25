@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/atqwerty/choresBackend/app"
-	"choresBackend/app/config"
+	"github.com/atqwerty/choresBackend/app/config"
 )
 
 func main() {
