@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/atqwerty/choresBackend/app/config"
+	".choresBackend/app/config"
 	"github.com/atqwerty/choresBackend/app/models"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
