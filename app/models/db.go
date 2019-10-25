@@ -13,10 +13,12 @@ type Datastore interface {
 	GetTodo(int) (*Todo, error)
 }
 
+// DB ...
 type DB struct {
-	sql.DB
+	*sql.DB
 }
 
+// InitDB ...
 func InitDB(dbConfig *config.DBConfig) (*DB, error) {
 	dbURL := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		dbConfig.Host,
@@ -34,5 +36,5 @@ func InitDB(dbConfig *config.DBConfig) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{*db}, nil
+	return &DB{db}, nil
 }
