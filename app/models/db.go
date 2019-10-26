@@ -20,13 +20,7 @@ type DB struct {
 
 // InitDB ...
 func InitDB(dbConfig *config.DBConfig) (*DB, error) {
-	dbURL := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbConfig.Host,
-		dbConfig.Port,
-		dbConfig.Username,
-		dbConfig.Password,
-		dbConfig.Name,
-	)
+	dbURL := fmt.Sprintf(dbConfig.Username + ":" + dbConfig.Password + "@tcp(172.17.0.2:3306)/" + dbConfig.Name)
 
 	db, err := sql.Open(dbConfig.Dialect, dbURL)
 	if err != nil {
