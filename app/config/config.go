@@ -11,6 +11,7 @@ type Config struct {
 	DBConfig *DBConfig
 }
 
+// DBConfig ...
 type DBConfig struct {
 	Dialect  string
 	Name     string
