@@ -58,7 +58,7 @@ func (app *App) addTodo(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&todo); err != nil {
-		utils.BadRequest(w, "payload is required")
+		utils.BadRequest(w, "payload is required "+err.Error())
 		return
 	}
 	defer r.Body.Close()

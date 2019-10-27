@@ -3,10 +3,8 @@ package models
 import (
 	"database/sql"
 	"fmt"
-	"path/filepath"
 
 	"github.com/atqwerty/choresBackend/app/config"
-	"github.com/smotes/purse"
 )
 
 type Datastore interface {
@@ -32,13 +30,13 @@ func InitDB(dbConfig *config.DBConfig) (*DB, error) {
 		return nil, err
 	}
 
-	ps, err := purse.New(filepath.Join(".", "sql"))
-	contents, ok := ps.Get("init.sql")
-	if !ok {
-		fmt.Println("SQL file not loaded")
-	}
+	// ps, err := purse.New(filepath.Join(".", "/sql"))
+	// contents, ok := ps.Get("init.sql")
+	// if !ok {
+	// 	fmt.Println("SQL file not loaded")
+	// }
 
-	db.Query(contents)
+	db.Query("CREATE DATABASE choresdb;")
 
 	return &DB{db}, nil
 }
