@@ -19,9 +19,9 @@ func RespondJSON(w http.ResponseWriter, status int, data interface{}) error {
 }
 
 // ServerError ...
-func ServerError(w http.ResponseWriter) {
+func ServerError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte("Server encountered an error."))
+	w.Write([]byte("Server encountered an error." + err.Error()))
 }
 
 // BadRequest ...

@@ -46,7 +46,7 @@ func (app *App) run(addr string) {
 func (app *App) listTodos(w http.ResponseWriter, r *http.Request) {
 	todos, err := app.db.AllTodos()
 	if err != nil {
-		utils.ServerError(w)
+		utils.ServerError(w, err)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (app *App) addTodo(w http.ResponseWriter, r *http.Request) {
 
 	todo, err := app.db.AddTodo(todo.Title, todo.Content)
 	if err != nil {
-		utils.ServerError(w)
+		utils.ServerError(w, err)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (app *App) getTodo(w http.ResponseWriter, r *http.Request) {
 
 	todo, err := app.db.GetTodo(id)
 	if err != nil {
-		utils.ServerError(w)
+		utils.ServerError(w, err)
 		return
 	}
 
