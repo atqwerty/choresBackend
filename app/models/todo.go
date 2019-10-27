@@ -1,8 +1,10 @@
 package models
 
+import "strconv"
+
 // Todo ...
 type Todo struct {
-	ID       int
+	id       int
 	Title    string `json:"title"`
 	Content  string `json:"content"`
 	Finished bool   `json:"finished"`
@@ -29,7 +31,7 @@ func (db *DB) AllTodos() ([]*Todo, error) {
 	todos := make([]*Todo, 0)
 	for rows.Next() {
 		todo := &Todo{}
-		rows.Scan(&todo.ID, &todo.Title, &todo.Content)
+		rows.Scan(&todo.id, &todo.Title, &todo.Content)
 		todos = append(todos, todo)
 	}
 
@@ -38,7 +40,7 @@ func (db *DB) AllTodos() ([]*Todo, error) {
 
 // AddTodo ...
 func (db *DB) AddTodo(title, content string) (*Todo, error) {
-	stmt, err := db.Prepare("INSERT INTO todo (title, content) VALUES($1 $2) RETURNING id;")
+	stmt, err := db.Prepare("INSERT INTO todo (title, content) VALUES(" + title + ", " + content + ");")
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +57,8 @@ func (db *DB) AddTodo(title, content string) (*Todo, error) {
 // GetTodo ...
 func (db *DB) GetTodo(id int) (*Todo, error) {
 	todo := Todo{}
-	row := db.QueryRow("SELECT * FROM todo WHERE id=$1;", id)
-	if err := row.Scan(&todo.ID, &todo.Title, &todo.Content); err != nil {
+	row := db.QueryRow("SELECT * FROM todo WHERE id=" + strconv.Itoa(id) + ";")
+	if err := row.Scan(&todo.id, &todo.Title, &todo.Content); err != nil {
 		return nil, nil
 	}
 
