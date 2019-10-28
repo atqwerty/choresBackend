@@ -54,6 +54,10 @@ func (db *DB) AddTodo(title, content string) (*Todo, error) {
 	}
 
 	id64, err := idQuery.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
 	id := int(id64)
 	return db.GetTodo(id)
 }
@@ -63,7 +67,7 @@ func (db *DB) GetTodo(id int) (*Todo, error) {
 	todo := Todo{}
 	row := db.QueryRow("SELECT * FROM todo WHERE id=" + strconv.Itoa(id) + ";")
 	if err := row.Scan(&todo.id, &todo.Title, &todo.Content); err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	return &todo, nil
