@@ -11,6 +11,9 @@ type Datastore interface {
 	AllTodos() ([]*Todo, error)
 	AddTodo(string, string) (*Todo, error)
 	GetTodo(int) (*Todo, error)
+	GetUser(int) (*User, error)
+	Register(string, string, string, string) (*User, error)
+	Login(string, string) (*User, error)
 }
 
 // DB ...
@@ -35,8 +38,6 @@ func InitDB(dbConfig *config.DBConfig) (*DB, error) {
 	// if !ok {
 	// 	fmt.Println("SQL file not loaded")
 	// }
-
-	db.Query("CREATE DATABASE choresdb;")
 
 	return &DB{db}, nil
 }

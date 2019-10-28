@@ -16,6 +16,7 @@ import (
 type App struct {
 	router *mux.Router
 	db     models.Datastore
+	// userDb models.UserStore
 }
 
 func (app *App) Start(conf *config.Config) {
@@ -36,6 +37,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/todo", app.listTodos).Methods("Get")
 	app.router.HandleFunc("/todo/{id:[0-9]+}", app.getTodo).Methods("Get")
 	app.router.HandleFunc("/todo/create", app.addTodo).Methods("Post")
+	app.router.HandleFunc("/register", app.register).Methods("Post")
 }
 
 func (app *App) run(addr string) {
@@ -95,4 +97,43 @@ func (app *App) getTodo(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) status(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, "API is up and working!")
+}
+
+func (app *App) register(w http.ResponseWriter, r *http.Request) {
+	user := &models.User{}
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&user); err != nil {
+		utils.BadRequest(w, "payload is required "+err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	if user.Email == "" {
+		utils.BadRequest(w, "email is required")
+		return
+	}
+	if user.Name == "" {
+		utils.BadRequest(w, "name is required")
+		return
+	}
+	if user.Surname == "" {
+		utils.BadRequest(w, "surname is required")
+		return
+	}
+	if user.Password == "" {
+		utils.BadRequest(w, "password is required")
+		return
+	}
+
+	// utils.BadRequest(w, user.Email+" "+user.Password)
+	// return
+
+	user, err := app.db.Register(user.Email, user.Name, user.Surname, user.Password)
+	if err != nil {
+		utils.ServerError(w, err)
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusCreated, user)
 }
