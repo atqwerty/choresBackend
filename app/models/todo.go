@@ -1,6 +1,8 @@
 package models
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // Todo ...
 type Todo struct {
@@ -40,17 +42,19 @@ func (db *DB) AllTodos() ([]*Todo, error) {
 
 // AddTodo ...
 func (db *DB) AddTodo(title, content string) (*Todo, error) {
-	stmt, err := db.Prepare("INSERT INTO todo (title, content) VALUES(" + title + ", " + content + ");")
+	stmt, err := db.Prepare("INSERT INTO todo (title, content) VALUES(?, ?);")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	var id int
-	if err = stmt.QueryRow(title, content).Scan(&id); err != nil {
+	idQuery, err := stmt.Exec(title, content)
+	if err != nil {
 		return nil, err
 	}
 
+	id64, err := idQuery.LastInsertId()
+	id := int(id64)
 	return db.GetTodo(id)
 }
 
