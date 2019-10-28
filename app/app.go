@@ -35,7 +35,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
 	app.router.HandleFunc("/todo", app.listTodos).Methods("Get")
 	app.router.HandleFunc("/todo/{id:[0-9]+}", app.getTodo).Methods("Get")
-	app.router.HandleFunc("/todo/create?title=asdf&cotnent=sadfasdf", app.addTodo).Methods("Post")
+	app.router.HandleFunc("/todo/create", app.addTodo).Methods("Post")
 }
 
 func (app *App) run(addr string) {
