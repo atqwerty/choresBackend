@@ -1,6 +1,8 @@
 package models
 
-import "strconv"
+import (
+	"strconv"
+)
 
 // User ...
 type User struct {
@@ -47,12 +49,23 @@ func (db *DB) Register(email, name, surname, password string) (*User, error) {
 // Login ...
 func (db *DB) Login(email, password string) (*User, error) {
 	user := User{}
-	row, err := db.Query("SELECT email, name, surname FROM user WHERE email=", email, " AND password=", password, ";")
-	if err != nil {
+	query := `SELECT email, name, surname FROM user WHERE email=? AND password=?;`
+	stmt := db.QueryRow(query, email, password)
+	if err := stmt.Scan(&user.Email, &user.Name, &user.Surname); err != nil {
 		return nil, err
 	}
+	// defer stmt.Close()
 
-	row.Scan(&user.Email, &user.Name, &user.Surname)
+	// idQuery, err := stmt.Exec(email, password)
+	// if err != nil {
+	// return nil, err
+	// }
+	//
+	// id64, err := idQuery.RowsAffected()
+	// if err != nil {
+	// return nil, err
+	// }
 
+	// id := int(id64)
 	return &user, nil
 }

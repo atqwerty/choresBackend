@@ -38,6 +38,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/todo/{id:[0-9]+}", app.getTodo).Methods("Get")
 	app.router.HandleFunc("/todo/create", app.addTodo).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
+	app.router.HandleFunc("/login", app.login).Methods("Post")
 }
 
 func (app *App) run(addr string) {
@@ -126,9 +127,6 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// utils.BadRequest(w, user.Email+" "+user.Password)
-	// return
-
 	user, err := app.db.Register(user.Email, user.Name, user.Surname, user.Password)
 	if err != nil {
 		utils.ServerError(w, err)
@@ -136,4 +134,31 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondJSON(w, http.StatusCreated, user)
+}
+
+func (app *App) login(w http.ResponseWriter, r *http.Request) {
+	user := &models.User{}
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&user); err != nil {
+		utils.BadRequest(w, "payload is required"+err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	if user.Email == "" {
+		utils.BadRequest(w, "email is missing")
+		return
+	}
+	if user.Password == "" {
+		utils.BadRequest(w, "password is missing")
+		return
+	}
+
+	user, err := app.db.Login(user.Email, user.Password)
+	if err != nil {
+		utils.ServerError(w, err)
+	}
+
+	utils.RespondJSON(w, http.StatusOK, user)
 }
