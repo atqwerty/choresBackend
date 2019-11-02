@@ -127,13 +127,13 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := app.db.Register(user.Email, user.Name, user.Surname, user.Password)
+	user, err := app.db.Register(user.Email, user.Name, user.Surname, user.Password)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, token)
+	utils.RespondJSON(w, http.StatusCreated, user)
 }
 
 func (app *App) login(w http.ResponseWriter, r *http.Request) {
@@ -155,11 +155,11 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := app.db.Login(user.Email, user.Password)
+	user, err := app.db.Login(user.Email, user.Password)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, token)
+	utils.RespondJSON(w, http.StatusOK, user)
 }

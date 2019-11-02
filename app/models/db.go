@@ -12,9 +12,9 @@ type Datastore interface {
 	AllTodos() ([]*Todo, error)
 	AddTodo(string, string) (*Todo, error)
 	GetTodo(int) (*Todo, error)
-	GetUser(int) (map[string]string, error)
-	Register(string, string, string, string) (map[string]string, error)
-	Login(string, string) (map[string]string, error)
+	GetUser(int) (*User, error)
+	Register(string, string, string, string) (*User, error)
+	Login(string, string) (*User, error)
 }
 
 // DB ...
