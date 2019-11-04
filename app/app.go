@@ -252,7 +252,9 @@ func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
-	// fmt.Fprintf(w, "%s", reqToken)
-	utils.RespondJSON(w, http.StatusCreated, models.GenerateCookie())
+	cookie := http.Cookie{Name: "Auth", Value: token.Raw, Expires: models.GenerateCookie(), HttpOnly: true}
+	http.SetCookie(w, &cookie)
+
+	// utils.RespondJSON(w, http.StatusCreated, models.GenerateCookie())
 	return
 }
