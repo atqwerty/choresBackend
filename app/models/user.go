@@ -89,16 +89,12 @@ func generateToken() (string, time.Time, error) {
 		"atqwerty",
 		jwt.StandardClaims{
 			ExpiresAt: expireToken,
-			// Issuer:    "localhost:8080",
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	signedToken, _ := token.SignedString([]byte("secret"))
-
-	// cookie := http.Cookie{Name: "Auth", Value: signedToken, Expires: expireCookie, HttpOnly: true}
-	// http.SetCookie(res, &cookie)
 
 	return signedToken, expireCookie, nil
 }

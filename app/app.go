@@ -42,8 +42,8 @@ func (app *App) Start(conf *config.Config) {
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
 	app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
-	app.router.HandleFunc("/todo/{id:[0-9]+}", app.getTask).Methods("Get")
-	app.router.HandleFunc("/todo/create", app.addTask).Methods("Post")
+	app.router.HandleFunc("/todo/{id:[0-9]+}", validate(app.getTask)).Methods("Get")
+	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 }
@@ -60,8 +60,6 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// someErr := claims.Valid()
-	// fmt.Errorf(someErr.Error())
 	fmt.Fprintf(w, "Hello %s", claims.Username)
 	tasks, err := app.db.AllTasks()
 	if err != nil {
@@ -73,6 +71,14 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	fmt.Fprintf(w, "Hello %s", claims.Username)
+
 	task := &models.Task{}
 
 	decoder := json.NewDecoder(r.Body)
@@ -97,6 +103,14 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	fmt.Fprintf(w, "Hello %s", claims.Username)
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
