@@ -17,7 +17,7 @@ func (t *Todo) MarkFinished() {
 	t.Finished = true
 }
 
-// MarkUnfinished
+// MarkUnfinished ...
 func (t *Todo) MarkUnfinished() {
 	t.Finished = false
 }
