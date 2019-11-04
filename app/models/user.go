@@ -83,7 +83,7 @@ func (db *DB) Login(email, password string) (*User, error) {
 
 func generateToken() (string, time.Time, error) {
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
-	expireCookie := time.Now().Add(time.Hour * 1)
+	expireCookie := time.Now().Add(time.Second * 15)
 
 	claims := Claims{
 		"atqwerty",

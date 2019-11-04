@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/atqwerty/choresBackend/app/config"
 	"github.com/atqwerty/choresBackend/app/models"
@@ -24,6 +25,10 @@ type App struct {
 	router *mux.Router
 	db     models.Datastore
 	// userDb models.UserStore
+}
+
+type Token struct {
+	token string `json:"token"`
 }
 
 func (app *App) Start(conf *config.Config) {
@@ -46,6 +51,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
+	app.router.HandleFunc("/refresh", app.refresh).Methods("Post")
 }
 
 func (app *App) run(addr string) {
@@ -56,7 +62,7 @@ func (app *App) run(addr string) {
 func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unathorized", 401)
 		return
 	}
 
@@ -200,7 +206,7 @@ func validate(page http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		cookie, err := req.Cookie("Auth")
 		if err != nil {
-			http.NotFound(res, req)
+			http.Error(res, "Unauthorized", 401)
 			return
 		}
 
@@ -211,7 +217,7 @@ func validate(page http.HandlerFunc) http.HandlerFunc {
 			return []byte("secret"), nil
 		})
 		if err != nil {
-			http.NotFound(res, req)
+			http.Error(res, "Unauthorized", 401)
 			return
 		}
 
@@ -219,8 +225,17 @@ func validate(page http.HandlerFunc) http.HandlerFunc {
 			ctx := context.WithValue(req.Context(), MyKey, *claims)
 			page(res, req.WithContext(ctx))
 		} else {
-			http.NotFound(res, req)
+			http.Error(res, "Unauthorized", 401)
 			return
 		}
 	})
+}
+
+func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
+	reqToken := r.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer")
+	reqToken = splitToken[1]
+
+	fmt.Fprintf(w, "%s", reqToken)
+	return
 }
