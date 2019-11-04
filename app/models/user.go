@@ -77,7 +77,7 @@ func generateToken() (map[string]string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	claims["exp"] = time.Now().Add(time.Second * 10).Unix()
 
 	tokenString, err := token.SignedString([]byte("secret"))
 	if err != nil {
