@@ -9,30 +9,39 @@ import (
 
 // User ...
 type User struct {
-	id       int
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	Surname  string `json:"surname"`
-	Password string `json:"password"`
+	id           int
+	Email        string    `json:"email"`
+	Name         string    `json:"name"`
+	Surname      string    `json:"surname"`
+	Password     string    `json:"password"`
+	Token        string    `json:"token"`
+	ExpireCookie time.Time `json:"expire_cookie"`
+}
+
+type Claims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
 }
 
 // GetUser ...
-func (db *DB) GetUser(id int) (map[string]string, error) {
+func (db *DB) GetUser(id int) (*User, error) {
 	user := User{}
 	row := db.QueryRow("SELECT email, name, surname FROM user WHERE id=" + strconv.Itoa(id) + ";")
 	if err := row.Scan(&user.Email, &user.Name, &user.Surname); err != nil {
 		return nil, err
 	}
 
-	token, err := generateToken()
+	token, expireCookie, err := generateToken()
 	if err != nil {
 		return nil, err
 	}
-	return token, nil
+	user.Token = token
+	user.ExpireCookie = expireCookie
+	return &user, nil
 }
 
 // Register ...
-func (db *DB) Register(email, name, surname, password string) (map[string]string, error) {
+func (db *DB) Register(email, name, surname, password string) (*User, error) {
 	stmt, err := db.Prepare("INSERT INTO user (email, name, surname, password) VALUES(?, ?, ?, ?);")
 	if err != nil {
 		return nil, err
@@ -54,7 +63,7 @@ func (db *DB) Register(email, name, surname, password string) (map[string]string
 }
 
 // Login ...
-func (db *DB) Login(email, password string) (map[string]string, error) {
+func (db *DB) Login(email, password string) (*User, error) {
 	user := User{}
 	query := `SELECT email, name, surname FROM user WHERE email=? AND password=?;`
 	stmt := db.QueryRow(query, email, password)
@@ -62,24 +71,37 @@ func (db *DB) Login(email, password string) (map[string]string, error) {
 		return nil, err
 	}
 
-	token, err := generateToken()
+	token, expireCookie, err := generateToken()
 	if err != nil {
 		return nil, err
 	}
 
-	return token, nil
+	user.Token = token
+	user.ExpireCookie = expireCookie
+	return &user, nil
 }
 
-func generateToken() (map[string]string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
+func generateToken() (string, time.Time, error) {
+	expireToken := time.Now().Add(time.Hour * 1).Unix()
+	expireCookie := time.Now().Add(time.Second * 15)
 
-	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-
-	tokenString, err := token.SignedString([]byte("secret"))
-	if err != nil {
-		return nil, err
+	claims := Claims{
+		"atqwerty",
+		jwt.StandardClaims{
+			ExpiresAt: expireToken,
+		},
 	}
 
-	return map[string]string{"token": tokenString}, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, _ := token.SignedString([]byte("secret"))
+
+	return signedToken, expireCookie, nil
+}
+
+// GenerateCookie ...
+func GenerateCookie() time.Time {
+	expireCookie := time.Now().Add(time.Second * 15)
+
+	return expireCookie
 }
