@@ -9,12 +9,17 @@ import (
 
 // User ...
 type User struct {
-	id       int
-	Email    string            `json:"email"`
-	Name     string            `json:"name"`
-	Surname  string            `json:"surname"`
-	Password string            `json:"password"`
-	Token    map[string]string `json:"token"`
+	id           int
+	Email        string    `json:"email"`
+	Name         string    `json:"name"`
+	Surname      string    `json:"surname"`
+	Password     string    `json:"password"`
+	Token        string    `json:"token"`
+	ExpireCookie time.Time `json:"expire_cookie"`
+}
+
+type Claims struct {
+	jwt.StandardClaims
 }
 
 // GetUser ...
@@ -25,11 +30,12 @@ func (db *DB) GetUser(id int) (*User, error) {
 		return nil, err
 	}
 
-	token, err := generateToken()
+	token, expireCookie, err := generateToken()
 	if err != nil {
 		return nil, err
 	}
 	user.Token = token
+	user.ExpireCookie = expireCookie
 	return &user, nil
 }
 
@@ -64,25 +70,33 @@ func (db *DB) Login(email, password string) (*User, error) {
 		return nil, err
 	}
 
-	token, err := generateToken()
+	token, expireCookie, err := generateToken()
 	if err != nil {
 		return nil, err
 	}
 
 	user.Token = token
+	user.ExpireCookie = expireCookie
 	return &user, nil
 }
 
-func generateToken() (map[string]string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
+func generateToken() (string, time.Time, error) {
+	expireToken := time.Now().Add(time.Hour * 1).Unix()
+	expireCookie := time.Now().Add(time.Hour * 1)
 
-	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Second * 10).Unix()
-
-	tokenString, err := token.SignedString([]byte("secret"))
-	if err != nil {
-		return nil, err
+	claims := Claims{
+		jwt.StandardClaims{
+			ExpiresAt: expireToken,
+			// Issuer:    "localhost:8080",
+		},
 	}
 
-	return map[string]string{"token": tokenString}, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	signedToken, _ := token.SignedString([]byte("secret"))
+
+	// cookie := http.Cookie{Name: "Auth", Value: signedToken, Expires: expireCookie, HttpOnly: true}
+	// http.SetCookie(res, &cookie)
+
+	return signedToken, expireCookie, nil
 }

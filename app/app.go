@@ -1,7 +1,9 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -9,9 +11,14 @@ import (
 	"github.com/atqwerty/choresBackend/app/config"
 	"github.com/atqwerty/choresBackend/app/models"
 	"github.com/atqwerty/choresBackend/app/utils"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
+
+type Key int
+
+const MyKey Key = 0
 
 type App struct {
 	router *mux.Router
@@ -34,7 +41,7 @@ func (app *App) Start(conf *config.Config) {
 
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
-	app.router.HandleFunc("/todo", app.listTodos).Methods("Get")
+	app.router.HandleFunc("/todo", validate(app.listTodos)).Methods("Get")
 	app.router.HandleFunc("/todo/{id:[0-9]+}", app.getTodo).Methods("Get")
 	app.router.HandleFunc("/todo/create", app.addTodo).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
@@ -47,6 +54,15 @@ func (app *App) run(addr string) {
 }
 
 func (app *App) listTodos(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	// someErr := claims.Valid()
+	// fmt.Errorf(someErr.Error())
+	fmt.Fprintf(w, "Hello %s", claims.Id)
 	todos, err := app.db.AllTodos()
 	if err != nil {
 		utils.ServerError(w, err)
@@ -161,5 +177,36 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
+	http.SetCookie(w, &cookie)
 	utils.RespondJSON(w, http.StatusOK, user)
+}
+
+func validate(page http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		cookie, err := req.Cookie("Auth")
+		if err != nil {
+			http.NotFound(res, req)
+			return
+		}
+
+		token, err := jwt.ParseWithClaims(cookie.Value, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method")
+			}
+			return []byte("secret"), nil
+		})
+		if err != nil {
+			http.NotFound(res, req)
+			return
+		}
+
+		if claims, ok := token.Claims.(*models.Claims); ok && token.Valid {
+			ctx := context.WithValue(req.Context(), MyKey, *claims)
+			page(res, req.WithContext(ctx))
+		} else {
+			http.NotFound(res, req)
+			return
+		}
+	})
 }
