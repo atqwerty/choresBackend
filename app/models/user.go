@@ -98,3 +98,10 @@ func generateToken() (string, time.Time, error) {
 
 	return signedToken, expireCookie, nil
 }
+
+// GenerateCookie ...
+func GenerateCookie() time.Time {
+	expireCookie := time.Now().Add(time.Second * 15)
+
+	return expireCookie
+}

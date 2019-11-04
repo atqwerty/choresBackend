@@ -233,9 +233,26 @@ func validate(page http.HandlerFunc) http.HandlerFunc {
 
 func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
 	reqToken := r.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer")
-	reqToken = splitToken[1]
+	splitToken := strings.Split(reqToken, "Bearer ")
+	reqToken = strings.Replace(splitToken[1], "\n", "", -1)
 
-	fmt.Fprintf(w, "%s", reqToken)
+	token, err := jwt.Parse(reqToken, func(token *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+		return []byte("secret"), nil
+	})
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		fmt.Println(claims["foo"], claims["nbf"])
+	} else {
+		fmt.Println(err)
+	}
+
+	// fmt.Fprintf(w, "%s", reqToken)
+	utils.RespondJSON(w, http.StatusCreated, models.GenerateCookie())
 	return
 }
