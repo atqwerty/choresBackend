@@ -19,6 +19,7 @@ type User struct {
 }
 
 type Claims struct {
+	Username string `json:"username"`
 	jwt.StandardClaims
 }
 
@@ -85,6 +86,7 @@ func generateToken() (string, time.Time, error) {
 	expireCookie := time.Now().Add(time.Hour * 1)
 
 	claims := Claims{
+		"atqwerty",
 		jwt.StandardClaims{
 			ExpiresAt: expireToken,
 			// Issuer:    "localhost:8080",

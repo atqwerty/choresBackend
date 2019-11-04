@@ -41,9 +41,9 @@ func (app *App) Start(conf *config.Config) {
 
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
-	app.router.HandleFunc("/todo", validate(app.listTodos)).Methods("Get")
-	app.router.HandleFunc("/todo/{id:[0-9]+}", app.getTodo).Methods("Get")
-	app.router.HandleFunc("/todo/create", app.addTodo).Methods("Post")
+	app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
+	app.router.HandleFunc("/todo/{id:[0-9]+}", app.getTask).Methods("Get")
+	app.router.HandleFunc("/todo/create", app.addTask).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 }
@@ -53,7 +53,7 @@ func (app *App) run(addr string) {
 	http.ListenAndServe(addr, loggedRouter)
 }
 
-func (app *App) listTodos(w http.ResponseWriter, r *http.Request) {
+func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.NotFound(w, r)
@@ -62,54 +62,54 @@ func (app *App) listTodos(w http.ResponseWriter, r *http.Request) {
 
 	// someErr := claims.Valid()
 	// fmt.Errorf(someErr.Error())
-	fmt.Fprintf(w, "Hello %s", claims.Id)
-	todos, err := app.db.AllTodos()
+	fmt.Fprintf(w, "Hello %s", claims.Username)
+	tasks, err := app.db.AllTasks()
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, todos)
+	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
-func (app *App) addTodo(w http.ResponseWriter, r *http.Request) {
-	todo := &models.Todo{}
+func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
+	task := &models.Task{}
 
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&todo); err != nil {
+	if err := decoder.Decode(&task); err != nil {
 		utils.BadRequest(w, "payload is required "+err.Error())
 		return
 	}
 	defer r.Body.Close()
 
-	if todo.Title == "" {
+	if task.Title == "" {
 		utils.BadRequest(w, "title is required")
 		return
 	}
 
-	todo, err := app.db.AddTodo(todo.Title, todo.Content)
+	task, err := app.db.AddTask(task.Title, task.Content)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, todo)
+	utils.RespondJSON(w, http.StatusCreated, task)
 }
 
-func (app *App) getTodo(w http.ResponseWriter, r *http.Request) {
+func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
 		utils.BadRequest(w, "ID must be an int")
 	}
 
-	todo, err := app.db.GetTodo(id)
+	task, err := app.db.GetTask(id)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, todo)
+	utils.RespondJSON(w, http.StatusOK, task)
 }
 
 func (app *App) status(w http.ResponseWriter, r *http.Request) {
