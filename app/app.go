@@ -276,7 +276,7 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 
 	app.userID = user.ID
 
-	fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
+	// fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
 
 	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
 	http.SetCookie(w, &cookie)

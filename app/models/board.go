@@ -14,7 +14,7 @@ type Board struct {
 
 // AllBoards ...
 func (db *DB) AllBoards(userID int) ([]*Board, error) {
-	query := "SELECT title, description FROM board WHERE host_id=" + strconv.Itoa(userID) + ";"
+	query := "SELECT title, description FROM board WHERE id=(SELECT board_id FROM user_board WHERE user_id=" + strconv.Itoa(userID) + ");"
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
