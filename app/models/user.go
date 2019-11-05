@@ -9,7 +9,7 @@ import (
 
 // User ...
 type User struct {
-	id           int
+	ID           int       `json:"id"`
 	Email        string    `json:"email"`
 	Name         string    `json:"name"`
 	Surname      string    `json:"surname"`
@@ -26,8 +26,8 @@ type Claims struct {
 // GetUser ...
 func (db *DB) GetUser(id int) (*User, error) {
 	user := User{}
-	row := db.QueryRow("SELECT email, name, surname FROM user WHERE id=" + strconv.Itoa(id) + ";")
-	if err := row.Scan(&user.Email, &user.Name, &user.Surname); err != nil {
+	row := db.QueryRow("SELECT * FROM user WHERE id=" + strconv.Itoa(id) + ";")
+	if err := row.Scan(&user); err != nil {
 		return nil, err
 	}
 
@@ -65,9 +65,9 @@ func (db *DB) Register(email, name, surname, password string) (*User, error) {
 // Login ...
 func (db *DB) Login(email, password string) (*User, error) {
 	user := User{}
-	query := `SELECT email, name, surname FROM user WHERE email=? AND password=?;`
+	query := `SELECT * WHERE email=? AND password=?;`
 	stmt := db.QueryRow(query, email, password)
-	if err := stmt.Scan(&user.Email, &user.Name, &user.Surname); err != nil {
+	if err := stmt.Scan(&user); err != nil {
 		return nil, err
 	}
 

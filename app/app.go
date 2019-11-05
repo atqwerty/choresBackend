@@ -24,7 +24,7 @@ const MyKey Key = 0
 type App struct {
 	router *mux.Router
 	db     models.Datastore
-	// userDb models.UserStore
+	userID int
 }
 
 type Token struct {
@@ -59,6 +59,23 @@ func (app *App) run(addr string) {
 	http.ListenAndServe(addr, loggedRouter)
 }
 
+func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.Error(w, "Unathorized", 401)
+		return
+	}
+
+	fmt.Fprintf(w, "Hello %s", claims.Username)
+	tasks, err := app.db.AllBoards()
+	if err != nil {
+		utils.ServerError(w, err)
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, tasks)
+}
+
 func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
@@ -74,6 +91,62 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondJSON(w, http.StatusOK, tasks)
+}
+
+func (app *App) addBoards(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	fmt.Fprintf(w, "Hello %s", claims.Username)
+
+	task := &models.Task{}
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&task); err != nil {
+		utils.BadRequest(w, "payload is required "+err.Error())
+		return
+	}
+	defer r.Body.Close()
+
+	if task.Title == "" {
+		utils.BadRequest(w, "title is required")
+		return
+	}
+
+	task, err := app.db.AddTask(task.Title, task.Content)
+	if err != nil {
+		utils.ServerError(w, err)
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusCreated, task)
+}
+
+func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	fmt.Fprintf(w, "Hello %s", claims.Username)
+
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		utils.BadRequest(w, "ID must be an int")
+	}
+
+	task, err := app.db.GetTask(id)
+	if err != nil {
+		utils.ServerError(w, err)
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, task)
 }
 
 func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
@@ -169,6 +242,8 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app.userID = user.ID
+
 	utils.RespondJSON(w, http.StatusCreated, user)
 }
 
@@ -196,6 +271,8 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 		utils.ServerError(w, err)
 		return
 	}
+
+	app.userID = user.ID
 
 	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
 	http.SetCookie(w, &cookie)
