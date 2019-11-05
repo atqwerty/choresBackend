@@ -65,9 +65,9 @@ func (db *DB) Register(email, name, surname, password string) (*User, error) {
 // Login ...
 func (db *DB) Login(email, password string) (*User, error) {
 	user := User{}
-	query := `SELECT * WHERE email=? AND password=?;`
+	query := `SELECT * FROM user WHERE email=? AND password=?;`
 	stmt := db.QueryRow(query, email, password)
-	if err := stmt.Scan(&user); err != nil {
+	if err := stmt.Scan(&user.ID, &user.Email, &user.Name, &user.Surname, &user.Password); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +83,7 @@ func (db *DB) Login(email, password string) (*User, error) {
 
 func generateToken() (string, time.Time, error) {
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
-	expireCookie := time.Now().Add(time.Second * 15)
+	expireCookie := time.Now().Add(time.Minute * 15)
 
 	claims := Claims{
 		"atqwerty",

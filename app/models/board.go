@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"strconv"
 )
 
@@ -12,8 +13,9 @@ type Board struct {
 }
 
 // AllBoards ...
-func (db *DB) AllBoards() ([]*Board, error) {
-	rows, err := db.Query("SELECT title, description FROM board")
+func (db *DB) AllBoards(userID int) ([]*Board, error) {
+	query := "SELECT title, description FROM board WHERE host_id=" + strconv.Itoa(userID) + ";"
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +56,8 @@ func (db *DB) AddBoard(title, description string, hostID int) (*Board, error) {
 // LinkWithUser ...
 func (db *DB) LinkWithUser(boardID, userID int) error {
 	stmt, err := db.Prepare("INSERT INTO user_board VALUES (?, ?);")
-	if err != {
-		return nil, err
+	if err != nil {
+		return err
 	}
 	defer stmt.Close()
 
@@ -64,6 +66,7 @@ func (db *DB) LinkWithUser(boardID, userID int) error {
 		return err
 	}
 
+	log.Print(idQuery)
 	return nil
 }
 

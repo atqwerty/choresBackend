@@ -49,6 +49,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
 	app.router.HandleFunc("/todo/{id:[0-9]+}", validate(app.getTask)).Methods("Get")
 	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
+	app.router.HandleFunc("/boards", validate(app.listBoards)).Methods("Get")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 	app.router.HandleFunc("/refresh", app.refresh).Methods("Post")
@@ -67,12 +68,13 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Hello %s", claims.Username)
-	tasks, err := app.db.AllBoards()
+	tasks, err := app.db.AllBoards(app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
+	fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
 	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
@@ -273,6 +275,8 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.userID = user.ID
+
+	fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
 
 	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
 	http.SetCookie(w, &cookie)
