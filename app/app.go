@@ -49,8 +49,9 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
 	app.router.HandleFunc("/todo/{id:[0-9]+}", validate(app.getTask)).Methods("Get")
 	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
-	app.router.HandleFunc("/boards", validate(app.listBoards)).Methods("Get")
-	app.router.HandleFunc("/addBoard", validate(app.addBoard)).Methods("Post")
+	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
+	app.router.HandleFunc("/board/{id:[0-9]+}", validate(app.getBoard)).Methods("Get")
+	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 	app.router.HandleFunc("/refresh", app.refresh).Methods("Post")
@@ -143,13 +144,13 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, "ID must be an int")
 	}
 
-	task, err := app.db.GetTask(id)
+	board, err := app.db.GetBoard(id, app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, task)
+	utils.RespondJSON(w, http.StatusOK, board)
 }
 
 func (app *App) addTask(w http.ResponseWriter, r *http.Request) {

@@ -17,6 +17,7 @@ type Datastore interface {
 	Login(string, string) (*User, error)
 	AllBoards(userID int) ([]*Board, error)
 	AddBoard(title, description string, hostID int) (*Board, error)
+	GetBoard(id, userID int) (*Board, error)
 	LinkWithUser(boardID, userID int) error
 }
 

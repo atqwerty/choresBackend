@@ -52,7 +52,7 @@ func (db *DB) AddBoard(title, description string, hostID int) (*Board, error) {
 	id := int(id64)
 	query := "INSERT INTO user_board (user_id, board_id) VALUES (" + strconv.Itoa(hostID) + ", " + strconv.Itoa(id) + ");"
 	db.Query(query)
-	return db.GetBoard(id)
+	return db.GetBoard(id, hostID)
 }
 
 // LinkWithUser ...
@@ -73,9 +73,9 @@ func (db *DB) LinkWithUser(boardID, userID int) error {
 }
 
 // GetBoard ...
-func (db *DB) GetBoard(id int) (*Board, error) {
+func (db *DB) GetBoard(id, userID int) (*Board, error) {
 	board := Board{}
-	row := db.QueryRow("SELECT id, title, description FROM board WHERE id=" + strconv.Itoa(id) + ";")
+	row := db.QueryRow("SELECT id, title, description FROM board WHERE id=(SELECT board_id FROM user_board WHERE user_id=" + strconv.Itoa(userID) + " AND board_id=" + strconv.Itoa(id) + ");")
 	if err := row.Scan(&board.ID, &board.Title, &board.Description); err != nil {
 		return nil, err
 	}
