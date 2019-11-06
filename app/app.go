@@ -50,6 +50,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/todo/{id:[0-9]+}", validate(app.getTask)).Methods("Get")
 	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/boards", validate(app.listBoards)).Methods("Get")
+	app.router.HandleFunc("/addBoard", validate(app.addBoard)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 	app.router.HandleFunc("/refresh", app.refresh).Methods("Post")
@@ -95,7 +96,7 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
-func (app *App) addBoards(w http.ResponseWriter, r *http.Request) {
+func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.NotFound(w, r)
@@ -104,27 +105,27 @@ func (app *App) addBoards(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "Hello %s", claims.Username)
 
-	task := &models.Task{}
+	board := &models.Board{}
 
 	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&task); err != nil {
+	if err := decoder.Decode(&board); err != nil {
 		utils.BadRequest(w, "payload is required "+err.Error())
 		return
 	}
 	defer r.Body.Close()
 
-	if task.Title == "" {
+	if board.Title == "" {
 		utils.BadRequest(w, "title is required")
 		return
 	}
 
-	task, err := app.db.AddTask(task.Title, task.Content)
+	board, err := app.db.AddBoard(board.Title, board.Description, app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, task)
+	utils.RespondJSON(w, http.StatusCreated, board)
 }
 
 func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
