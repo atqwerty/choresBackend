@@ -186,7 +186,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := app.db.AddTask(task.Title, task.Description, task.Status, boardID, app.userID)
+	task, err = app.db.AddTask(task.Title, task.Description, task.Status, boardID, app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -205,10 +205,10 @@ func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello %s", claims.Username)
 
 	vars := mux.Vars(r)
-	boardID, err := strconv.Atoi(vars["board_id"])
-	if err != nil {
-		utils.BadRequest(w, "ID of board must be an int")
-	}
+	// boardID, err := strconv.Atoi(vars["board_id"])
+	// if err != nil {
+	// 	utils.BadRequest(w, "ID of board must be an int")
+	// }
 	taskID, err := strconv.Atoi(vars["task_id"])
 	if err != nil {
 		utils.BadRequest(w, "ID of task must be an int")
