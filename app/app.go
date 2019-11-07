@@ -47,7 +47,6 @@ func (app *App) Start(conf *config.Config) {
 
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
-	// app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
 	app.router.HandleFunc("/board/{board_id}/task/{task_id}", validate(app.getTask)).Methods("Get")
 	app.router.HandleFunc("/board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
@@ -70,14 +69,13 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
+	_ = claims
 	tasks, err := app.db.AllBoards(app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
 	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
@@ -88,7 +86,7 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) {
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
+	_ = claims
 	tasks, err := app.db.GetBoardTasks(boardID)
 	if err != nil {
 		utils.ServerError(w, err)
@@ -101,17 +99,16 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) {
 func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
-
+	_ = claims
 	board := &models.Board{}
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&board); err != nil {
-		utils.BadRequest(w, "payload is required "+err.Error())
+		utils.BadRequest(w, "payload is required ")
 		return
 	}
 	defer r.Body.Close()
@@ -133,12 +130,11 @@ func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
-
+	_ = claims
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -151,21 +147,18 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// app.currentBoardID = board.ID
-	app.listTasks(w, r, board.ID)
-
 	utils.RespondJSON(w, http.StatusOK, board)
+	app.listTasks(w, r, board.ID)
 }
 
 func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
-
+	_ = claims
 	vars := mux.Vars(r)
 	boardID, err := strconv.Atoi(vars["board_id"])
 	if err != nil {
@@ -176,7 +169,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&task); err != nil {
-		utils.BadRequest(w, "payload is required "+err.Error())
+		utils.BadRequest(w, "payload is required ")
 		return
 	}
 	defer r.Body.Close()
@@ -198,18 +191,12 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		fmt.Fprintf(w, "%s", "retard")
-		// http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username+"retard")
-
+	_ = claims
 	vars := mux.Vars(r)
-	// boardID, err := strconv.Atoi(vars["board_id"])
-	// if err != nil {
-	// 	utils.BadRequest(w, "ID of board must be an int")
-	// }
 	taskID, err := strconv.Atoi(vars["task_id"])
 	if err != nil {
 		utils.BadRequest(w, "ID of task must be an int")
@@ -217,7 +204,7 @@ func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := app.db.GetTask(taskID)
 	if err != nil {
-		fmt.Fprintf(w, "%s", err.Error()+"asdf")
+		utils.ServerError(w, err)
 		return
 	}
 
@@ -271,7 +258,7 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&user); err != nil {
-		utils.BadRequest(w, "payload is required"+err.Error())
+		utils.BadRequest(w, "payload is required")
 		return
 	}
 	defer r.Body.Close()
@@ -292,8 +279,6 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.userID = user.ID
-
-	// fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
 
 	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
 	http.SetCookie(w, &cookie)
