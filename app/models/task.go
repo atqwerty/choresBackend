@@ -42,7 +42,7 @@ func (db *DB) GetBoardTasks(boardID int) ([]*Task, error) {
 }
 
 // AddTask ...
-func (db *DB) AddTask(title, description, status string, boardID, hostID int) (*Task, error) {
+func (db *DB) AddTask(title, description string, status, boardID, hostID int) (*Task, error) {
 	stmtStatus, err := db.Prepare("INSERT INTO statuses (status, board_id) VALUES (?, ?);")
 	if err != nil {
 		return nil, err

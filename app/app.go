@@ -22,9 +22,10 @@ type Key int
 const MyKey Key = 0
 
 type App struct {
-	router *mux.Router
-	db     models.Datastore
-	userID int
+	router         *mux.Router
+	db             models.Datastore
+	userID         int
+	currentBoardID int
 }
 
 type Token struct {
@@ -46,7 +47,7 @@ func (app *App) Start(conf *config.Config) {
 
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
-	app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
+	// app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
 	app.router.HandleFunc("/todo/{id:[0-9]+}", validate(app.getTask)).Methods("Get")
 	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
@@ -80,7 +81,7 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
-func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
+func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
@@ -88,7 +89,7 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Hello %s", claims.Username)
-	tasks, err := app.db.GetBoardTasks()
+	tasks, err := app.db.GetBoardTasks(boardID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -150,6 +151,9 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// app.currentBoardID = board.ID
+	app.listTasks(w, r, board.ID)
+
 	utils.RespondJSON(w, http.StatusOK, board)
 }
 
@@ -176,7 +180,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := app.db.AddTask(task.Title, task.Content)
+	task, err := app.db.AddTask(task.Title, task.Description, task.Status, app.currentBoardID, app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
