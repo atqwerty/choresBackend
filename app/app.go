@@ -48,8 +48,8 @@ func (app *App) Start(conf *config.Config) {
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
 	// app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
-	app.router.HandleFunc("board/{board_id:[0-9]+}/task/{task_id:[0-9]+}", validate(app.getTask)).Methods("Get")
-	app.router.HandleFunc("board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
+	app.router.HandleFunc("/board/{board_id}/task/{task_id}", validate(app.getTask)).Methods("Get")
+	app.router.HandleFunc("/board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
 	app.router.HandleFunc("/board/{id:[0-9]+}", validate(app.getBoard)).Methods("Get")
 	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
@@ -198,11 +198,12 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		fmt.Fprintf(w, "%s", "retard")
+		// http.NotFound(w, r)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
+	fmt.Fprintf(w, "Hello %s", claims.Username+"retard")
 
 	vars := mux.Vars(r)
 	// boardID, err := strconv.Atoi(vars["board_id"])
@@ -216,7 +217,7 @@ func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := app.db.GetTask(taskID)
 	if err != nil {
-		utils.ServerError(w, err)
+		fmt.Fprintf(w, "%s", err.Error()+"asdf")
 		return
 	}
 
