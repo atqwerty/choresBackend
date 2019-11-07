@@ -88,7 +88,7 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Hello %s", claims.Username)
-	tasks, err := app.db.AllTasks()
+	tasks, err := app.db.GetBoardTasks()
 	if err != nil {
 		utils.ServerError(w, err)
 		return
