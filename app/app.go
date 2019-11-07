@@ -48,8 +48,8 @@ func (app *App) Start(conf *config.Config) {
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
 	// app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
-	app.router.HandleFunc("/todo/{id:[0-9]+}", validate(app.getTask)).Methods("Get")
-	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
+	app.router.HandleFunc("board/{board_id:[0-9]+}/task/{task_id:[0-9]+}", validate(app.getTask)).Methods("Get")
+	app.router.HandleFunc("board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
 	app.router.HandleFunc("/board/{id:[0-9]+}", validate(app.getBoard)).Methods("Get")
 	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
@@ -166,6 +166,12 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "Hello %s", claims.Username)
 
+	vars := mux.Vars(r)
+	boardID, err := strconv.Atoi(vars["board_id"])
+	if err != nil {
+		utils.BadRequest(w, "ID of board must be an int")
+	}
+
 	task := &models.Task{}
 
 	decoder := json.NewDecoder(r.Body)
@@ -180,7 +186,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := app.db.AddTask(task.Title, task.Description, task.Status, app.currentBoardID, app.userID)
+	task, err := app.db.AddTask(task.Title, task.Description, task.Status, boardID, app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -199,12 +205,16 @@ func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello %s", claims.Username)
 
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	boardID, err := strconv.Atoi(vars["board_id"])
 	if err != nil {
-		utils.BadRequest(w, "ID must be an int")
+		utils.BadRequest(w, "ID of board must be an int")
+	}
+	taskID, err := strconv.Atoi(vars["task_id"])
+	if err != nil {
+		utils.BadRequest(w, "ID of task must be an int")
 	}
 
-	task, err := app.db.GetTask(id)
+	task, err := app.db.GetTask(taskID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
