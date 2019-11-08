@@ -8,8 +8,9 @@ import (
 // Board ...
 type Board struct {
 	ID          int
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Tasks       []*Task `json:"tasks"`
 }
 
 // AllBoards ...

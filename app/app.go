@@ -50,7 +50,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/board/{board_id}/task/{task_id}", validate(app.getTask)).Methods("Get")
 	app.router.HandleFunc("/board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
-	app.router.HandleFunc("/board/{id:[0-9]+}", validate(app.getBoard)).Methods("Get")
+	app.router.HandleFunc("/board/{board_id:[0-9]+}", validate(app.getBoard)).Methods("Get")
 	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
@@ -79,21 +79,22 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
-func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) {
+func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
-		return
+		return nil
 	}
 
 	_ = claims
 	tasks, err := app.db.GetBoardTasks(boardID)
 	if err != nil {
 		utils.ServerError(w, err)
-		return
+		return nil
 	}
 
-	utils.RespondJSON(w, http.StatusOK, tasks)
+	// utils.RespondJSON(w, http.StatusOK, tasks)
+	return tasks
 }
 
 func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +137,7 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 
 	_ = claims
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := strconv.Atoi(vars["board_id"])
 	if err != nil {
 		utils.BadRequest(w, "ID must be an int")
 	}
@@ -147,8 +148,8 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	board.Tasks = app.listTasks(w, r, board.ID)
 	utils.RespondJSON(w, http.StatusOK, board)
-	app.listTasks(w, r, board.ID)
 }
 
 func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +221,7 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&user); err != nil {
-		utils.BadRequest(w, "payload is required "+err.Error())
+		utils.BadRequest(w, "payload is required ")
 		return
 	}
 	defer r.Body.Close()
