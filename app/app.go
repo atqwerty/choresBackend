@@ -52,6 +52,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
 	app.router.HandleFunc("/board/{board_id:[0-9]+}", validate(app.getBoard)).Methods("Get")
 	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
+	app.router.HandleFunc("/board/newStatus", validate(app.newStatus)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 	app.router.HandleFunc("/refresh", app.refresh).Methods("Post")
@@ -77,6 +78,28 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondJSON(w, http.StatusOK, tasks)
+}
+
+func (app *App) newStatus(w http.ResponseWriter, r *http.Request) error {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.Error(w, "Unathorized", 401)
+		return nil
+	}
+
+	_ = claims
+
+	status := &models.Status{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&status); err != nil {
+		return err
+	}
+	status, err := app.db.AddStatus(status.Status, status.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {

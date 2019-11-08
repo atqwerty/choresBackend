@@ -13,6 +13,12 @@ type Board struct {
 	Tasks       []*Task `json:"tasks"`
 }
 
+type Status struct {
+	ID      int
+	Status  string `json:"status"`
+	BoardID int    `json:"board_id"`
+}
+
 // AllBoards ...
 func (db *DB) AllBoards(userID int) ([]*Board, error) {
 	// query :=
@@ -82,4 +88,16 @@ func (db *DB) GetBoard(id, userID int) (*Board, error) {
 	}
 
 	return &board, nil
+}
+
+// AddStatus ...
+func (db *DB) AddStatus(status string, boardID int) (*Status, error) {
+	createdStatus := &Status{}
+	row := db.QueryRow("INSERT INTO statuses (status, board_id) VALUES (" + status + ", " + strconv.Itoa(boardID) + ");")
+
+	if err := row.Scan(&createdStatus.ID, &createdStatus.Status, &createdStatus.BoardID); err != nil {
+		return nil, err
+	}
+
+	return createdStatus, nil
 }
