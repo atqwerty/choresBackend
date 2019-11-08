@@ -10,7 +10,7 @@ import (
 // Datastore ...
 type Datastore interface {
 	GetBoardTasks(boardID int) ([]*Task, error)
-	AddTask(string, string, int, int, int) (*Task, error)
+	AddTask(string, string, string, int, int) (*Task, error)
 	GetTask(int) (*Task, error)
 	GetUser(int) (*User, error)
 	Register(string, string, string, string) (*User, error)

@@ -94,7 +94,7 @@ func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&status); err != nil {
 		utils.ServerError(w, err)
 	}
-	status, err := app.db.AddStatus(status.Status, status.ID)
+	status, err := app.db.AddStatus(status.Status, app.currentBoardID)
 	if err != nil {
 		utils.ServerError(w, err)
 	}
