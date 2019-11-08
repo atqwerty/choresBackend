@@ -22,9 +22,10 @@ type Key int
 const MyKey Key = 0
 
 type App struct {
-	router *mux.Router
-	db     models.Datastore
-	userID int
+	router         *mux.Router
+	db             models.Datastore
+	userID         int
+	currentBoardID int
 }
 
 type Token struct {
@@ -46,11 +47,10 @@ func (app *App) Start(conf *config.Config) {
 
 func (app *App) initRouters() {
 	app.router.HandleFunc("/", app.status).Methods("Get")
-	app.router.HandleFunc("/todo", validate(app.listTasks)).Methods("Get")
-	app.router.HandleFunc("/todo/{id:[0-9]+}", validate(app.getTask)).Methods("Get")
-	app.router.HandleFunc("/todo/create", validate(app.addTask)).Methods("Post")
+	app.router.HandleFunc("/board/{board_id}/task/{task_id}", validate(app.getTask)).Methods("Get")
+	app.router.HandleFunc("/board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
 	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
-	app.router.HandleFunc("/board/{id:[0-9]+}", validate(app.getBoard)).Methods("Get")
+	app.router.HandleFunc("/board/{board_id:[0-9]+}", validate(app.getBoard)).Methods("Get")
 	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
@@ -69,48 +69,47 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
+	_ = claims
 	tasks, err := app.db.AllBoards(app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
 	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
-func (app *App) listTasks(w http.ResponseWriter, r *http.Request) {
+func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
-		return
+		return nil
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
-	tasks, err := app.db.AllTasks()
+	_ = claims
+	tasks, err := app.db.GetBoardTasks(boardID)
 	if err != nil {
 		utils.ServerError(w, err)
-		return
+		return nil
 	}
 
-	utils.RespondJSON(w, http.StatusOK, tasks)
+	// utils.RespondJSON(w, http.StatusOK, tasks)
+	return tasks
 }
 
 func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
-
+	_ = claims
 	board := &models.Board{}
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&board); err != nil {
-		utils.BadRequest(w, "payload is required "+err.Error())
+		utils.BadRequest(w, "payload is required ")
 		return
 	}
 	defer r.Body.Close()
@@ -132,14 +131,13 @@ func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
-
+	_ = claims
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := strconv.Atoi(vars["board_id"])
 	if err != nil {
 		utils.BadRequest(w, "ID must be an int")
 	}
@@ -150,23 +148,29 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	board.Tasks = app.listTasks(w, r, board.ID)
 	utils.RespondJSON(w, http.StatusOK, board)
 }
 
 func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
+	_ = claims
+	vars := mux.Vars(r)
+	boardID, err := strconv.Atoi(vars["board_id"])
+	if err != nil {
+		utils.BadRequest(w, "ID of board must be an int")
+	}
 
 	task := &models.Task{}
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&task); err != nil {
-		utils.BadRequest(w, "payload is required "+err.Error())
+		utils.BadRequest(w, "payload is required ")
 		return
 	}
 	defer r.Body.Close()
@@ -176,7 +180,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err := app.db.AddTask(task.Title, task.Content)
+	task, err = app.db.AddTask(task.Title, task.Description, task.Status, boardID, app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -188,19 +192,18 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
-		http.NotFound(w, r)
+		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	fmt.Fprintf(w, "Hello %s", claims.Username)
-
+	_ = claims
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	taskID, err := strconv.Atoi(vars["task_id"])
 	if err != nil {
-		utils.BadRequest(w, "ID must be an int")
+		utils.BadRequest(w, "ID of task must be an int")
 	}
 
-	task, err := app.db.GetTask(id)
+	task, err := app.db.GetTask(taskID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -218,7 +221,7 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&user); err != nil {
-		utils.BadRequest(w, "payload is required "+err.Error())
+		utils.BadRequest(w, "payload is required ")
 		return
 	}
 	defer r.Body.Close()
@@ -256,7 +259,7 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&user); err != nil {
-		utils.BadRequest(w, "payload is required"+err.Error())
+		utils.BadRequest(w, "payload is required")
 		return
 	}
 	defer r.Body.Close()
@@ -277,8 +280,6 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.userID = user.ID
-
-	// fmt.Fprintf(w, "%s", strconv.Itoa(app.userID))
 
 	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
 	http.SetCookie(w, &cookie)

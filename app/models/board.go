@@ -8,14 +8,15 @@ import (
 // Board ...
 type Board struct {
 	ID          int
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Tasks       []*Task `json:"tasks"`
 }
 
 // AllBoards ...
 func (db *DB) AllBoards(userID int) ([]*Board, error) {
-	query := "SELECT title, description FROM board WHERE id=(SELECT board_id FROM user_board WHERE user_id=" + strconv.Itoa(userID) + ");"
-	rows, err := db.Query(query)
+	// query :=
+	rows, err := db.Query("SELECT id, title, description FROM board WHERE id IN (SELECT board_id FROM user_board WHERE user_id=" + strconv.Itoa(userID) + ");")
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +25,7 @@ func (db *DB) AllBoards(userID int) ([]*Board, error) {
 	boards := make([]*Board, 0)
 	for rows.Next() {
 		board := &Board{}
-		rows.Scan(&board.Title, &board.Description)
+		rows.Scan(&board.ID, &board.Title, &board.Description)
 		boards = append(boards, board)
 	}
 
