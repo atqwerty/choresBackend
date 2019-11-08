@@ -9,12 +9,17 @@ import (
 
 // Datastore ...
 type Datastore interface {
-	AllTasks() ([]*Task, error)
-	AddTask(string, string) (*Task, error)
+	GetBoardTasks(boardID int) ([]*Task, error)
+	AddTask(string, string, string, int, int) (*Task, error)
 	GetTask(int) (*Task, error)
 	GetUser(int) (*User, error)
 	Register(string, string, string, string) (*User, error)
 	Login(string, string) (*User, error)
+	AllBoards(userID int) ([]*Board, error)
+	AddBoard(title, description string, hostID int) (*Board, error)
+	GetBoard(id, userID int) (*Board, error)
+	LinkWithUser(boardID, userID int) error
+	AddStatus(string, int) (*Status, error)
 }
 
 // DB ...
