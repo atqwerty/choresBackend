@@ -9,7 +9,7 @@ type Task struct {
 	ID          int
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	Status      int    `json:"status"`
+	Status      string `json:"status"`
 	Finished    bool   `json:"finished"`
 }
 
@@ -42,24 +42,31 @@ func (db *DB) GetBoardTasks(boardID int) ([]*Task, error) {
 }
 
 // AddTask ...
-func (db *DB) AddTask(title, description string, status, boardID, hostID int) (*Task, error) {
-	stmtStatus, err := db.Prepare("INSERT INTO statuses (status, board_id) VALUES (?, ?);")
-	if err != nil {
-		return nil, err
-	}
-	defer stmtStatus.Close()
-
-	statusIDQuery, err := stmtStatus.Exec(status, boardID)
-	if err != nil {
+func (db *DB) AddTask(title, description, status string, boardID, hostID int) (*Task, error) {
+	statusContainer := &Status{}
+	// statusIDContainer, err := strconv.Atoi(status)
+	row := db.QueryRow("SELECT status FROM statuses WHERE id=" + status + ";")
+	if err := row.Scan(&statusContainer.Status); err != nil {
 		return nil, err
 	}
 
-	statusID64, err := statusIDQuery.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
+	// stmtStatus, err := db.Prepare("INSERT INTO statuses (status, board_id) VALUES (?, ?);")
+	// if err != nil {
+	// return nil, err
+	// }
+	// defer stmtStatus.Close()
 
-	statusID := int(statusID64)
+	// statusIDQuery, err := stmtStatus.Exec(status, boardID)
+	// if err != nil {
+	// return nil, err
+	// }
+
+	// statusID64, err := statusIDQuery.LastInsertId()
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// statusID := int(statusID64)
 
 	stmt, err := db.Prepare("INSERT INTO task (title, description, status, board_id, host_id) VALUES(?, ?, ?, ?, ?);")
 	if err != nil {
@@ -67,7 +74,7 @@ func (db *DB) AddTask(title, description string, status, boardID, hostID int) (*
 	}
 	defer stmt.Close()
 
-	idQuery, err := stmt.Exec(title, description, statusID, boardID, hostID)
+	idQuery, err := stmt.Exec(title, description, statusContainer.Status, boardID, hostID)
 	if err != nil {
 		return nil, err
 	}

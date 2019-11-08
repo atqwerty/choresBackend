@@ -80,11 +80,11 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, tasks)
 }
 
-func (app *App) newStatus(w http.ResponseWriter, r *http.Request) error {
+func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
-		return nil
+		// return nil
 	}
 
 	_ = claims
@@ -92,14 +92,14 @@ func (app *App) newStatus(w http.ResponseWriter, r *http.Request) error {
 	status := &models.Status{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&status); err != nil {
-		return err
+		utils.ServerError(w, err)
 	}
-	status, err := app.db.AddStatus(status.Status, status.ID)
+	status, err := app.db.AddStatus(status.Status, app.currentBoardID)
 	if err != nil {
-		return err
+		utils.ServerError(w, err)
 	}
 
-	return nil
+	utils.RespondJSON(w, http.StatusOK, status)
 }
 
 func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {
