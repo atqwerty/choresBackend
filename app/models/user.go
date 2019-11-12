@@ -15,6 +15,7 @@ type User struct {
 	Surname      string    `json:"surname"`
 	Password     string    `json:"password"`
 	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
 	ExpireCookie time.Time `json:"expire_cookie"`
 }
 
@@ -31,11 +32,13 @@ func (db *DB) GetUser(id int) (*User, error) {
 		return nil, err
 	}
 
-	token, expireCookie, err := generateToken()
+	token, refreshToken, expireCookie, err := generateToken()
 	if err != nil {
 		return nil, err
 	}
+
 	user.Token = token
+	user.RefreshToken = refreshToken
 	user.ExpireCookie = expireCookie
 	return &user, nil
 }
@@ -71,19 +74,21 @@ func (db *DB) Login(email, password string) (*User, error) {
 		return nil, err
 	}
 
-	token, expireCookie, err := generateToken()
+	token, refreshToken, expireCookie, err := generateToken()
 	if err != nil {
 		return nil, err
 	}
 
 	user.Token = token
+	user.RefreshToken = refreshToken
 	user.ExpireCookie = expireCookie
 	return &user, nil
 }
 
-func generateToken() (string, time.Time, error) {
+func generateToken() (string, string, time.Time, error) {
+	refreshExpireToken := time.Now().Add(time.Hour * 72).Unix()
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
-	expireCookie := time.Now().Add(time.Minute * 15)
+	expireCookie := time.Now().Add(time.Second * 15)
 
 	claims := Claims{
 		"atqwerty",
@@ -92,11 +97,20 @@ func generateToken() (string, time.Time, error) {
 		},
 	}
 
+	refreshClaims := Claims{
+		"atqwerty",
+		jwt.StandardClaims{
+			ExpiresAt: refreshExpireToken,
+		},
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 
 	signedToken, _ := token.SignedString([]byte("secret"))
+	signedRefreshToken, _ := refreshToken.SignedString([]byte("secret"))
 
-	return signedToken, expireCookie, nil
+	return signedToken, signedRefreshToken, expireCookie, nil
 }
 
 // GenerateCookie ...
