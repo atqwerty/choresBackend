@@ -26,6 +26,8 @@ type App struct {
 	db             models.Datastore
 	userID         int
 	currentBoardID int
+	token          string
+	refreshToken   string
 }
 
 type Token struct {
@@ -303,6 +305,8 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.userID = user.ID
+	app.token = user.Token
+	app.refreshToken = user.RefreshToken
 
 	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
 	http.SetCookie(w, &cookie)
@@ -353,15 +357,16 @@ func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
 		return []byte("secret"), nil
 	})
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && token.Raw == app.refreshToken {
 		fmt.Println(claims["foo"], claims["nbf"])
 	} else {
 		fmt.Println(err)
+		return
 	}
 
-	cookie := http.Cookie{Name: "Auth", Value: token.Raw, Expires: models.GenerateCookie(), HttpOnly: true}
+	cookie := http.Cookie{Name: "Auth", Value: app.token, Expires: models.GenerateCookie(), HttpOnly: true}
 	http.SetCookie(w, &cookie)
 
-	// utils.RespondJSON(w, http.StatusCreated, models.GenerateCookie())
+	// utils.RespondJSON(w, http.StatusCreated, reqToken)
 	return
 }
