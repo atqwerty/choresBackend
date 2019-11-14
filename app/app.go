@@ -367,6 +367,6 @@ func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
 	cookie := http.Cookie{Name: "Auth", Value: app.token, Expires: models.GenerateCookie(), HttpOnly: true}
 	http.SetCookie(w, &cookie)
 
-	utils.RespondJSON(w, http.StatusCreated, reqToken)
+	// utils.RespondJSON(w, http.StatusCreated, reqToken)
 	return
 }
