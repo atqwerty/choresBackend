@@ -57,7 +57,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/board/newStatus", validate(app.newStatus)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
-	app.router.HandleFunc("/refresh", app.refresh).Methods("Post")
+	app.router.HandleFunc("/refresh", app.refresh).Methods("Get")
 }
 
 func (app *App) run(addr string) {
@@ -367,6 +367,6 @@ func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
 	cookie := http.Cookie{Name: "Auth", Value: app.token, Expires: models.GenerateCookie(), HttpOnly: true}
 	http.SetCookie(w, &cookie)
 
-	// utils.RespondJSON(w, http.StatusCreated, reqToken)
+	utils.RespondJSON(w, http.StatusCreated, reqToken)
 	return
 }
