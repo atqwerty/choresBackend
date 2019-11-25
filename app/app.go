@@ -58,6 +58,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 	app.router.HandleFunc("/refresh", app.refresh).Methods("Get")
+	app.router.HandleFunc("/board/{board_id:[0-9]+}/getStatuses", validate(app.getStatuses)).Methods("Get")
 }
 
 func (app *App) run(addr string) {
@@ -73,13 +74,13 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = claims
-	tasks, err := app.db.AllBoards(app.userID)
+	boards, err := app.db.AllBoards(app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, tasks)
+	utils.RespondJSON(w, http.StatusOK, boards)
 }
 
 func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
@@ -102,6 +103,28 @@ func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondJSON(w, http.StatusOK, status)
+}
+
+func (app *App) getStatuses(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.Error(w, "Unathorized", 401)
+	}
+
+	_ = claims
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["board_id"])
+	if err != nil {
+		utils.BadRequest(w, "ID must be an int")
+	}
+
+	statuses, err := app.db.GetStatuses(id)
+	if err != nil {
+		utils.ServerError(w, err)
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, statuses)
 }
 
 func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {

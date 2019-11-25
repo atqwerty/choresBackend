@@ -20,6 +20,7 @@ type Datastore interface {
 	GetBoard(id, userID int) (*Board, error)
 	LinkWithUser(boardID, userID int) error
 	AddStatus(string, int) (*Status, error)
+	GetStatuses(int) ([]*ReturnStatus, error)
 }
 
 // DB ...

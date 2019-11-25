@@ -19,6 +19,10 @@ type Status struct {
 	BoardID int    `json:"board_id"`
 }
 
+type ReturnStatus struct {
+	Status string `json:"status"`
+}
+
 // AllBoards ...
 func (db *DB) AllBoards(userID int) ([]*Board, error) {
 	// query :=
@@ -100,4 +104,20 @@ func (db *DB) AddStatus(status string, boardID int) (*Status, error) {
 	}
 
 	return createdStatus, nil
+}
+
+func (db *DB) GetStatuses(boardID int) ([]*ReturnStatus, error) {
+	rows, err := db.Query("SELECT status FROM statuses WHERE board_id=" + strconv.Itoa(boardID) + ";")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	statuses := make([]*ReturnStatus, 0)
+	for rows.Next() {
+		status := &ReturnStatus{}
+		rows.Scan(&status.Status)
+		statuses = append(statuses, status)
+	}
+	return statuses, nil
 }
