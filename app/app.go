@@ -167,14 +167,14 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, "ID must be an int")
 	}
 
-	board, err := app.db.GetBoard(id, app.userID)
-	if err != nil {
-		utils.ServerError(w, err)
-		return
-	}
+	// board, err := app.db.GetBoard(id, app.userID)
+	// if err != nil {
+	// utils.ServerError(w, err)
+	// return
+	// }
 
-	board.Tasks = app.listTasks(w, r, board.ID)
-	utils.RespondJSON(w, http.StatusOK, board)
+	utils.RespondJSON(w, http.StatusOK, app.listTasks(w, r, id))
+	//utils.RespondJSON(w, http.StatusOK, board)
 }
 
 func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
