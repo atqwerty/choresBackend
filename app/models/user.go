@@ -88,7 +88,7 @@ func (db *DB) Login(email, password string) (*User, error) {
 func generateToken() (string, string, time.Time, error) {
 	refreshExpireToken := time.Now().Add(time.Hour * 72).Unix()
 	expireToken := time.Now().Add(time.Hour * 1).Unix()
-	expireCookie := time.Now().Add(time.Second * 1)
+	expireCookie := time.Now().Add(time.Hour * 1)
 
 	claims := Claims{
 		"atqwerty",
@@ -115,7 +115,7 @@ func generateToken() (string, string, time.Time, error) {
 
 // GenerateCookie ...
 func GenerateCookie() time.Time {
-	expireCookie := time.Now().Add(time.Second * 15)
+	expireCookie := time.Now().Add(time.Hour * 1)
 
 	return expireCookie
 }

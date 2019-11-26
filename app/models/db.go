@@ -19,8 +19,9 @@ type Datastore interface {
 	AddBoard(title, description string, hostID int) (*Board, error)
 	GetBoard(id, userID int) (*Board, error)
 	LinkWithUser(boardID, userID int) error
-	AddStatus(string, int) (*Status, error)
+	AddStatus(string, int) (*ReturnStatus, error)
 	GetStatuses(int) ([]*ReturnStatus, error)
+	UpdateTaskStatus(int, int) error
 }
 
 // DB ...

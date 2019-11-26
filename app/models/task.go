@@ -98,3 +98,18 @@ func (db *DB) GetTask(id int) (*Task, error) {
 
 	return &task, nil
 }
+
+func (db *DB) UpdateTaskStatus(statusID int, taskID int) error {
+	var statusHolder string
+	row := db.QueryRow("SELECT status FROM statuses WHERE id=" + strconv.Itoa(statusID) + ";")
+	if err := row.Scan(&statusHolder); err != nil {
+		return err
+	}
+
+	sqlStatement := "UPDATE task SET status = ? WHERE id = " + strconv.Itoa(taskID) + ";"
+	_, err := db.Exec(sqlStatement, statusHolder)
+	if err != nil {
+		return err
+	}
+	return nil
+}

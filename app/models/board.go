@@ -20,6 +20,11 @@ type Status struct {
 }
 
 type ReturnStatus struct {
+	ID int `json:"id"`
+	Status string `json:"status"`
+}
+
+type IncomingStatus struct {
 	Status string `json:"status"`
 }
 
@@ -95,19 +100,33 @@ func (db *DB) GetBoard(id, userID int) (*Board, error) {
 }
 
 // AddStatus ...
-func (db *DB) AddStatus(status string, boardID int) (*Status, error) {
-	createdStatus := &Status{}
-	row := db.QueryRow("INSERT INTO statuses (status, board_id) VALUES (" + status + ", " + strconv.Itoa(boardID) + ");")
+func (db *DB) AddStatus(status string, boardID int) (*ReturnStatus, error) {
+	stmt, err := db.Prepare("INSERT INTO statuses (status, board_id) VALUES (?, ?);")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
 
-	if err := row.Scan(&createdStatus.ID, &createdStatus.Status, &createdStatus.BoardID); err != nil {
+	idQuery, err := stmt.Exec(status, strconv.Itoa(boardID))
+	if err != nil {
 		return nil, err
 	}
 
-	return createdStatus, nil
+	id64, err := idQuery.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	returningStatus := ReturnStatus{}
+	row := db.QueryRow("SELECT id, status FROM statuses WHERE id=" + strconv.Itoa(int(id64)) +";")
+	if err := row.Scan(&returningStatus.ID, &returningStatus.Status); err != nil {
+		return nil, err
+	}
+	return &returningStatus, nil
 }
 
 func (db *DB) GetStatuses(boardID int) ([]*ReturnStatus, error) {
-	rows, err := db.Query("SELECT status FROM statuses WHERE board_id=" + strconv.Itoa(boardID) + ";")
+	rows, err := db.Query("SELECT id, status FROM statuses WHERE board_id=" + strconv.Itoa(boardID) + ";")
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +135,7 @@ func (db *DB) GetStatuses(boardID int) ([]*ReturnStatus, error) {
 	statuses := make([]*ReturnStatus, 0)
 	for rows.Next() {
 		status := &ReturnStatus{}
-		rows.Scan(&status.Status)
+		rows.Scan(&status.ID, &status.Status)
 		statuses = append(statuses, status)
 	}
 	return statuses, nil
