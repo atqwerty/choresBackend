@@ -31,7 +31,7 @@ type DB struct {
 
 // InitDB ...
 func InitDB(dbConfig *config.DBConfig) (*DB, error) {
-	dbURL := fmt.Sprintf(dbConfig.Username + ":" + dbConfig.Password + "@tcp(172.17.0.2:3306)/" + dbConfig.Name)
+	dbURL := fmt.Sprintf(dbConfig.Username + ":" + dbConfig.Password + "@tcp(remotemysql.com:3306)/" + dbConfig.Name)
 
 	db, err := sql.Open(dbConfig.Dialect, dbURL)
 	if err != nil {
