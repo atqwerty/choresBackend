@@ -34,6 +34,11 @@ type Token struct {
 	token string `json:"token"`
 }
 
+type TaskStatus struct {
+	StatusID int `json:"status_id"`
+	TaskID int `json:"task_id"`
+}
+
 func (app *App) Start(conf *config.Config) {
 	db, err := models.InitDB(conf.DBConfig)
 	if err != nil {
@@ -58,6 +63,8 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 	app.router.HandleFunc("/refresh", app.refresh).Methods("Get")
+	app.router.HandleFunc("/board/{board_id:[0-9]+}/getStatuses", validate(app.getStatuses)).Methods("Get")
+	app.router.HandleFunc("/board/{board_id:[0-9]+}/updateStatus", validate(app.updateStatus)).Methods("Post")
 }
 
 func (app *App) run(addr string) {
@@ -73,13 +80,13 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = claims
-	tasks, err := app.db.AllBoards(app.userID)
+	boards, err := app.db.AllBoards(app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusOK, tasks)
+	utils.RespondJSON(w, http.StatusOK, boards)
 }
 
 func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
@@ -91,17 +98,60 @@ func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
 
 	_ = claims
 
-	status := &models.Status{}
+	status := &models.IncomingStatus{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&status); err != nil {
 		utils.ServerError(w, err)
 	}
-	status, err := app.db.AddStatus(status.Status, app.currentBoardID)
+	returnedStatus, err := app.db.AddStatus(status.Status, app.currentBoardID)
 	if err != nil {
 		utils.ServerError(w, err)
 	}
 
-	utils.RespondJSON(w, http.StatusOK, status)
+	utils.RespondJSON(w, http.StatusOK, returnedStatus)
+}
+
+func (app *App) updateStatus(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.Error(w, "Unathorized", 401)
+	}
+
+	_ = claims
+
+	var myStoredVariable = &TaskStatus{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&myStoredVariable); err != nil {
+		utils.BadRequest(w, err.Error())
+	}
+	err := app.db.UpdateTaskStatus(myStoredVariable.StatusID, myStoredVariable.TaskID)
+	if err != nil {
+		utils.ServerError(w, err)
+	}
+
+	utils.RespondJSON(w, http.StatusOK, "nice")
+}
+
+func (app *App) getStatuses(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.Error(w, "Unathorized", 401)
+	}
+
+	_ = claims
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["board_id"])
+	if err != nil {
+		utils.BadRequest(w, "ID must be an int")
+	}
+
+	statuses, err := app.db.GetStatuses(id)
+	if err != nil {
+		utils.ServerError(w, err)
+		return
+	}
+
+	utils.RespondJSON(w, http.StatusOK, statuses)
 }
 
 func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {
@@ -173,6 +223,7 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 	// return
 	// }
 
+	app.currentBoardID = id
 	utils.RespondJSON(w, http.StatusOK, app.listTasks(w, r, id))
 	//utils.RespondJSON(w, http.StatusOK, board)
 }
@@ -195,7 +246,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&task); err != nil {
-		utils.BadRequest(w, "payload is required ")
+		utils.BadRequest(w, "asdfasfasf")
 		return
 	}
 	defer r.Body.Close()
