@@ -49,7 +49,7 @@ func (app *App) Start(conf *config.Config) {
 	app.db = db
 	app.router = mux.NewRouter()
 	app.initRouters()
-	app.run("")
+	app.run()
 }
 
 func (app *App) initRouters() {
@@ -67,9 +67,10 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/board/{board_id:[0-9]+}/updateStatus", validate(app.updateStatus)).Methods("Post")
 }
 
-func (app *App) run(addr string) {
+func (app *App) run() {
+	port := os.Getenv("PORT")
 	loggedRouter := handlers.LoggingHandler(os.Stdout, app.router)
-	http.ListenAndServe(addr, loggedRouter)
+	http.ListenAndServe(port, loggedRouter)
 }
 
 func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
