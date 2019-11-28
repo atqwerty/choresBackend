@@ -70,7 +70,7 @@ func (app *App) initRouters() {
 func (app *App) run() {
 	port := os.Getenv("PORT")
 	loggedRouter := handlers.LoggingHandler(os.Stdout, app.router)
-	http.ListenAndServe(port, loggedRouter)
+	http.ListenAndServe(":" + port, loggedRouter)
 }
 
 func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
