@@ -49,7 +49,7 @@ func (app *App) Start(conf *config.Config) {
 	app.db = db
 	app.router = mux.NewRouter()
 	app.initRouters()
-	app.run(":8080")
+	app.run("")
 }
 
 func (app *App) initRouters() {
