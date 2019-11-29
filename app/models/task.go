@@ -46,7 +46,7 @@ func (db *DB) AddTask(title string, description string, status int, boardID int,
 	statusContainer := &Status{}
 	// statusIDContainer, err := strconv.Atoi(status)
 	row := db.QueryRow("SELECT * FROM statuses WHERE id=" + strconv.Itoa(status) + ";")
-	if err := row.Scan(&statusContainer); err != nil {
+	if err := row.Scan(&statusContainer.ID, &statusContainer.Status, &statusContainer.BoardID); err != nil {
 		return nil, err
 	}
 
