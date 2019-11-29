@@ -42,7 +42,7 @@ func (db *DB) GetBoardTasks(boardID int) ([]*Task, error) {
 }
 
 // AddTask ...
-func (db *DB) AddTask(title, description, status int, boardID, hostID int) (*Task, error) {
+func (db *DB) AddTask(title string, description string, status int, boardID int, hostID int) (*Task, error) {
 	statusContainer := &IncomingStatus{}
 	// statusIDContainer, err := strconv.Atoi(status)
 	row := db.QueryRow("SELECT status FROM statuses WHERE id=" + strconv.Itoa(status) + ";")
