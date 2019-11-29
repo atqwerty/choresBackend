@@ -243,7 +243,8 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, "ID of board must be an int")
 	}
 
-	task := &models.Task{}
+	task := &models.IncomingTask{}
+	returnTask := &models.Task{}
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&task); err != nil {
@@ -257,13 +258,13 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, err = app.db.AddTask(task.Title, task.Description, task.Status, boardID, app.userID)
+	returnTask, err = app.db.AddTask(task.Title, task.Description, task.Status, boardID, app.userID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, task)
+	utils.RespondJSON(w, http.StatusCreated, returnTask)
 }
 
 func (app *App) getTask(w http.ResponseWriter, r *http.Request) {

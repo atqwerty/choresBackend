@@ -9,8 +9,15 @@ type Task struct {
 	ID          int
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	Status      int `json:"status"`
+	Status      string `json:"status"`
 	Finished    bool   `json:"finished"`
+}
+
+type IncomingTask struct {
+	ID int
+	Title string `json:"title"`
+	Description string `json:"description"`
+	Status int `json:"status"`
 }
 
 // MarkFinished ...
