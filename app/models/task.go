@@ -9,7 +9,7 @@ type Task struct {
 	ID          int
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	Status      string `json:"status"`
+	Status      int `json:"status"`
 	Finished    bool   `json:"finished"`
 }
 
@@ -42,10 +42,10 @@ func (db *DB) GetBoardTasks(boardID int) ([]*Task, error) {
 }
 
 // AddTask ...
-func (db *DB) AddTask(title, description, status string, boardID, hostID int) (*Task, error) {
+func (db *DB) AddTask(title, description, status int, boardID, hostID int) (*Task, error) {
 	statusContainer := &IncomingStatus{}
 	// statusIDContainer, err := strconv.Atoi(status)
-	row := db.QueryRow("SELECT status FROM statuses WHERE id=" + status + ";")
+	row := db.QueryRow("SELECT status FROM statuses WHERE id=" + strconv.Itoa(status) + ";")
 	if err := row.Scan(&statusContainer); err != nil {
 		return nil, err
 	}
