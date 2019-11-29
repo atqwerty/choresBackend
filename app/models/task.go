@@ -43,10 +43,10 @@ func (db *DB) GetBoardTasks(boardID int) ([]*Task, error) {
 
 // AddTask ...
 func (db *DB) AddTask(title, description, status string, boardID, hostID int) (*Task, error) {
-	statusContainer := &Status{}
+	statusContainer := &IncomingStatus{}
 	// statusIDContainer, err := strconv.Atoi(status)
 	row := db.QueryRow("SELECT status FROM statuses WHERE id=" + status + ";")
-	if err := row.Scan(&statusContainer.Status); err != nil {
+	if err := row.Scan(&statusContainer); err != nil {
 		return nil, err
 	}
 
