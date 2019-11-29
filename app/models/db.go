@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/atqwerty/choresBackend/app/config"
 )
@@ -22,6 +23,7 @@ type Datastore interface {
 	AddStatus(string, int) (*ReturnStatus, error)
 	GetStatuses(int) ([]*ReturnStatus, error)
 	UpdateTaskStatus(int, int) error
+	GenerateCookie() time.Time
 }
 
 // DB ...
