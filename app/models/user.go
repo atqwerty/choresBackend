@@ -114,7 +114,7 @@ func generateToken() (string, string, time.Time, error) {
 }
 
 // GenerateCookie ...
-func GenerateCookie() time.Time {
+func (db *DB) GenerateCookie() time.Time {
 	expireCookie := time.Now().Add(time.Second * 15)
 
 	return expireCookie
