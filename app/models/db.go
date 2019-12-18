@@ -36,10 +36,12 @@ func InitDB(dbConfig *config.DBConfig) (*DB, error) {
 	dbURL := fmt.Sprintf(dbConfig.Username + ":" + dbConfig.Password + "@tcp(remotemysql.com:3306)/" + dbConfig.Name)
 
 	db, err := sql.Open(dbConfig.Dialect, dbURL)
+	db.SetMaxOpenConns(700)
 	if err != nil {
 		return nil, err
 	}
 	if err = db.Ping(); err != nil {
+		fmt.Print("asdf")
 		return nil, err
 	}
 

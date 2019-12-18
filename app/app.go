@@ -60,6 +60,7 @@ func (app *App) initRouters() {
 	app.router.HandleFunc("/board/{board_id:[0-9]+}", validate(app.getBoard)).Methods("Get")
 	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
 	app.router.HandleFunc("/board/newStatus", validate(app.newStatus)).Methods("Post")
+	app.router.HandleFunc("/board/newStatusMobile", validate(app.newStatusMobile)).Methods("Post")
 	app.router.HandleFunc("/register", app.register).Methods("Post")
 	app.router.HandleFunc("/login", app.login).Methods("Post")
 	app.router.HandleFunc("/refresh", app.refresh).Methods("Get")
@@ -105,6 +106,28 @@ func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
 		utils.ServerError(w, err)
 	}
 	returnedStatus, err := app.db.AddStatus(status.Status, app.currentBoardID)
+	if err != nil {
+		utils.ServerError(w, err)
+	}
+
+	utils.RespondJSON(w, http.StatusOK, returnedStatus)
+}
+
+func (app *App) newStatusMobile(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value(MyKey).(models.Claims)
+	if !ok {
+		http.Error(w, "Unathorized", 401)
+		// return nil
+	}
+
+	_ = claims
+
+	status := &models.ReturnStatus{}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&status); err != nil {
+		utils.ServerError(w, err)
+	}
+	returnedStatus, err := app.db.AddStatus(status.Status, status.ID)
 	if err != nil {
 		utils.ServerError(w, err)
 	}
