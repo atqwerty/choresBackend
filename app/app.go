@@ -224,7 +224,7 @@ func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, board)
+	utils.RespondJSON(w, http.StatusOK, board)
 }
 
 func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
@@ -287,7 +287,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.RespondJSON(w, http.StatusCreated, returnTask)
+	utils.RespondJSON(w, http.StatusOK, returnTask)
 }
 
 func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
@@ -352,7 +352,7 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 
 	app.userID = user.ID
 
-	utils.RespondJSON(w, http.StatusCreated, user)
+	utils.RespondJSON(w, http.StatusOK, user)
 }
 
 func (app *App) login(w http.ResponseWriter, r *http.Request) {
@@ -443,6 +443,6 @@ func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
 	cookie := http.Cookie{Name: "Auth", Value: app.token, Expires: app.db.GenerateCookie(), HttpOnly: true}
 	http.SetCookie(w, &cookie)
 
-	utils.RespondJSON(w, http.StatusCreated, reqToken)
+	utils.RespondJSON(w, http.StatusOK, reqToken)
 	return
 }
