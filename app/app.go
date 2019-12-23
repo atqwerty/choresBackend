@@ -153,7 +153,7 @@ func (app *App) updateStatus(w http.ResponseWriter, r *http.Request) {
 		utils.ServerError(w, err)
 	}
 
-	utils.RespondJSON(w, http.StatusOK, "nice")
+	utils.RespondJSON(w, http.StatusOK, nil)
 }
 
 func (app *App) getStatuses(w http.ResponseWriter, r *http.Request) {
