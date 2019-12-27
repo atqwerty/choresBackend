@@ -7,7 +7,7 @@ FROM golang:latest
 LABEL maintainer="Markitanov Denis <dmarkitanov@gmail.com>"
 
 # Set the Current Working Directory inside the container
-WORKDIR /app
+WORKDIR /cmd
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./

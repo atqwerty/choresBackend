@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/atqwerty/choresBackend/app"
-	"github.com/atqwerty/choresBackend/app/config"
+	"github.com/atqwerty/choresBackend/cmd"
+	"github.com/atqwerty/choresBackend/internal/config"
 )
 
 func main() {
 	config := config.GetConf()
-	app := &app.App{}
+	app := &cmd.Session{}
 	app.Start(config)
 }
