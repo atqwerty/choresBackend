@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/atqwerty/choresBackend/app"
+	"github.com/atqwerty/choresBackend/cmd"
 	"github.com/atqwerty/choresBackend/app/config"
 )
 
