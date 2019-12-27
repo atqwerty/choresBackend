@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/atqwerty/choresBackend/app/config"
+	"github.com/atqwerty/choresBackend/internal/config"
 )
 
 // Datastore ...

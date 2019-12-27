@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/atqwerty/choresBackend/app/config"
-	"github.com/atqwerty/choresBackend/app/models"
-	"github.com/atqwerty/choresBackend/app/utils"
+	"github.com/atqwerty/choresBackend/internal/config"
+	"github.com/atqwerty/choresBackend/internal/models"
+	"github.com/atqwerty/choresBackend/internal/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
