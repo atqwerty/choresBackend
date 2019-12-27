@@ -18,15 +18,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Key int
-
-const MyKey Key = 0
+const MyKey miscTypes.KeyPrototype = 0
 
 type Session miscTypes.PrototypeSession
 
-type Token struct {
-	token string `json:"token"`
-}
+type Token miscTypes.TokenPrototype
 
 type TaskStatus struct {
 	StatusID int `json:"status_id"`
