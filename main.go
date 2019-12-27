@@ -7,6 +7,6 @@ import (
 
 func main() {
 	config := config.GetConf()
-	app := &app.App{}
+	app := &cmd.Session{}
 	app.Start(config)
 }

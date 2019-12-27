@@ -1,4 +1,4 @@
-package app
+package cmd
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/atqwerty/choresBackend/internal/config"
 	"github.com/atqwerty/choresBackend/internal/models"
 	"github.com/atqwerty/choresBackend/internal/utils"
+	"github.com/atqwerty/choresBackend/internal/types/miscTypes"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -21,14 +22,7 @@ type Key int
 
 const MyKey Key = 0
 
-type App struct {
-	router         *mux.Router
-	db             models.Datastore
-	userID         int
-	currentBoardID int
-	token          string
-	refreshToken   string
-}
+type Session miscTypes.PrototypeSession
 
 type Token struct {
 	token string `json:"token"`
@@ -39,42 +33,42 @@ type TaskStatus struct {
 	TaskID int `json:"task_id"`
 }
 
-func (app *App) Start(conf *config.Config) {
+func (app *Session) Start(conf *config.Config) {
 	db, err := models.InitDB(conf.DBConfig)
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
 
-	app.db = db
-	app.router = mux.NewRouter()
+	app.Db = db
+	app.Router = mux.NewRouter()
 	app.initRouters()
 	app.run()
 }
 
-func (app *App) initRouters() {
-	app.router.HandleFunc("/", app.status).Methods("Get")
-	app.router.HandleFunc("/board/{board_id}/task/{task_id}", validate(app.getTask)).Methods("Get")
-	app.router.HandleFunc("/board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
-	app.router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
-	app.router.HandleFunc("/board/{board_id:[0-9]+}", validate(app.getBoard)).Methods("Get")
-	app.router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
-	app.router.HandleFunc("/board/newStatus", validate(app.newStatus)).Methods("Post")
-	app.router.HandleFunc("/board/newStatusMobile", validate(app.newStatusMobile)).Methods("Post")
-	app.router.HandleFunc("/register", app.register).Methods("Post")
-	app.router.HandleFunc("/login", app.login).Methods("Post")
-	app.router.HandleFunc("/refresh", app.refresh).Methods("Get")
-	app.router.HandleFunc("/board/{board_id:[0-9]+}/getStatuses", validate(app.getStatuses)).Methods("Get")
-	app.router.HandleFunc("/board/{board_id:[0-9]+}/updateStatus", validate(app.updateStatus)).Methods("Post")
+func (app *Session) initRouters() {
+	app.Router.HandleFunc("/", app.status).Methods("Get")
+	app.Router.HandleFunc("/board/{board_id}/task/{task_id}", validate(app.getTask)).Methods("Get")
+	app.Router.HandleFunc("/board/{board_id:[0-9]+}/task/create", validate(app.addTask)).Methods("Post")
+	app.Router.HandleFunc("/board/all", validate(app.listBoards)).Methods("Get")
+	app.Router.HandleFunc("/board/{board_id:[0-9]+}", validate(app.getBoard)).Methods("Get")
+	app.Router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
+	app.Router.HandleFunc("/board/newStatus", validate(app.newStatus)).Methods("Post")
+	app.Router.HandleFunc("/board/newStatusMobile", validate(app.newStatusMobile)).Methods("Post")
+	app.Router.HandleFunc("/register", app.register).Methods("Post")
+	app.Router.HandleFunc("/login", app.login).Methods("Post")
+	app.Router.HandleFunc("/refresh", app.refresh).Methods("Get")
+	app.Router.HandleFunc("/board/{board_id:[0-9]+}/getStatuses", validate(app.getStatuses)).Methods("Get")
+	app.Router.HandleFunc("/board/{board_id:[0-9]+}/updateStatus", validate(app.updateStatus)).Methods("Post")
 }
 
-func (app *App) run() {
+func (app *Session) run() {
 	port := os.Getenv("PORT")
-	loggedRouter := handlers.LoggingHandler(os.Stdout, app.router)
+	loggedRouter := handlers.LoggingHandler(os.Stdout, app.Router)
 	http.ListenAndServe(":" + port, loggedRouter)
 }
 
-func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
+func (app *Session) listBoards(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
@@ -82,7 +76,7 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = claims
-	boards, err := app.db.AllBoards(app.userID)
+	boards, err := app.Db.AllBoards(app.CurrentUserID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -91,7 +85,7 @@ func (app *App) listBoards(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, boards)
 }
 
-func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
+func (app *Session) newStatus(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
@@ -105,7 +99,7 @@ func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&status); err != nil {
 		utils.ServerError(w, err)
 	}
-	returnedStatus, err := app.db.AddStatus(status.Status, app.currentBoardID)
+	returnedStatus, err := app.Db.AddStatus(status.Status, app.CurrentBoardID)
 	if err != nil {
 		utils.ServerError(w, err)
 	}
@@ -113,11 +107,10 @@ func (app *App) newStatus(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, returnedStatus)
 }
 
-func (app *App) newStatusMobile(w http.ResponseWriter, r *http.Request) {
+func (app *Session) newStatusMobile(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
-		// return nil
 	}
 
 	_ = claims
@@ -127,7 +120,7 @@ func (app *App) newStatusMobile(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&status); err != nil {
 		utils.ServerError(w, err)
 	}
-	returnedStatus, err := app.db.AddStatus(status.Status, status.ID)
+	returnedStatus, err := app.Db.AddStatus(status.Status, status.ID)
 	if err != nil {
 		utils.ServerError(w, err)
 	}
@@ -135,7 +128,7 @@ func (app *App) newStatusMobile(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, returnedStatus)
 }
 
-func (app *App) updateStatus(w http.ResponseWriter, r *http.Request) {
+func (app *Session) updateStatus(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
@@ -148,7 +141,7 @@ func (app *App) updateStatus(w http.ResponseWriter, r *http.Request) {
 	if err := decoder.Decode(&myStoredVariable); err != nil {
 		utils.BadRequest(w, err.Error())
 	}
-	err := app.db.UpdateTaskStatus(myStoredVariable.StatusID, myStoredVariable.TaskID)
+	err := app.Db.UpdateTaskStatus(myStoredVariable.StatusID, myStoredVariable.TaskID)
 	if err != nil {
 		utils.ServerError(w, err)
 	}
@@ -156,7 +149,7 @@ func (app *App) updateStatus(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, myStoredVariable)
 }
 
-func (app *App) getStatuses(w http.ResponseWriter, r *http.Request) {
+func (app *Session) getStatuses(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
@@ -169,7 +162,7 @@ func (app *App) getStatuses(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, "ID must be an int")
 	}
 
-	statuses, err := app.db.GetStatuses(id)
+	statuses, err := app.Db.GetStatuses(id)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -178,7 +171,7 @@ func (app *App) getStatuses(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, statuses)
 }
 
-func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {
+func (app *Session) listTasks(w http.ResponseWriter, r *http.Request, boardID int) []*models.Task {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unathorized", 401)
@@ -186,7 +179,7 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) [
 	}
 
 	_ = claims
-	tasks, err := app.db.GetBoardTasks(boardID)
+	tasks, err := app.Db.GetBoardTasks(boardID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return nil
@@ -196,7 +189,7 @@ func (app *App) listTasks(w http.ResponseWriter, r *http.Request, boardID int) [
 	return tasks
 }
 
-func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
+func (app *Session) addBoard(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unauthorized", 401)
@@ -218,7 +211,7 @@ func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	board, err := app.db.AddBoard(board.Title, board.Description, app.userID)
+	board, err := app.Db.AddBoard(board.Title, board.Description, app.CurrentUserID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -227,7 +220,7 @@ func (app *App) addBoard(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, board)
 }
 
-func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
+func (app *Session) getBoard(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unauthorized", 401)
@@ -241,18 +234,18 @@ func (app *App) getBoard(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, "ID must be an int")
 	}
 
-	// board, err := app.db.GetBoard(id, app.userID)
+	// board, err := app.db.GetBoard(id, app.CurrentUserID)
 	// if err != nil {
 	// utils.ServerError(w, err)
 	// return
 	// }
 
-	app.currentBoardID = id
+	app.CurrentBoardID = id
 	utils.RespondJSON(w, http.StatusOK, app.listTasks(w, r, id))
 	//utils.RespondJSON(w, http.StatusOK, board)
 }
 
-func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
+func (app *Session) addTask(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unauthorized", 401)
@@ -281,7 +274,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	returnTask, err = app.db.AddTask(task.Title, task.Description, task.Status, boardID, app.userID)
+	returnTask, err = app.Db.AddTask(task.Title, task.Description, task.Status, boardID, app.CurrentUserID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -290,7 +283,7 @@ func (app *App) addTask(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, returnTask)
 }
 
-func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
+func (app *Session) getTask(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(MyKey).(models.Claims)
 	if !ok {
 		http.Error(w, "Unauthorized", 401)
@@ -304,7 +297,7 @@ func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 		utils.BadRequest(w, "ID of task must be an int")
 	}
 
-	task, err := app.db.GetTask(taskID)
+	task, err := app.Db.GetTask(taskID)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
@@ -313,11 +306,11 @@ func (app *App) getTask(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, task)
 }
 
-func (app *App) status(w http.ResponseWriter, r *http.Request) {
+func (app *Session) status(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, "API is up and working!")
 }
 
-func (app *App) register(w http.ResponseWriter, r *http.Request) {
+func (app *Session) register(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{}
 
 	decoder := json.NewDecoder(r.Body)
@@ -344,18 +337,18 @@ func (app *App) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := app.db.Register(user.Email, user.Name, user.Surname, user.Password)
+	user, err := app.Db.Register(user.Email, user.Name, user.Surname, user.Password)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	app.userID = user.ID
+	app.CurrentUserID = user.ID
 
 	utils.RespondJSON(w, http.StatusOK, user)
 }
 
-func (app *App) login(w http.ResponseWriter, r *http.Request) {
+func (app *Session) login(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{}
 
 	decoder := json.NewDecoder(r.Body)
@@ -374,15 +367,15 @@ func (app *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := app.db.Login(user.Email, user.Password)
+	user, err := app.Db.Login(user.Email, user.Password)
 	if err != nil {
 		utils.ServerError(w, err)
 		return
 	}
 
-	app.userID = user.ID
-	app.token = user.Token
-	app.refreshToken = user.RefreshToken
+	app.CurrentUserID = user.ID
+	app.Token = user.Token
+	app.RefreshToken = user.RefreshToken
 
 	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
 	http.SetCookie(w, &cookie)
@@ -418,7 +411,7 @@ func validate(page http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
+func (app *Session) refresh(w http.ResponseWriter, r *http.Request) {
 	reqToken := r.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
 	reqToken = strings.Replace(splitToken[1], "\n", "", -1)
@@ -433,14 +426,14 @@ func (app *App) refresh(w http.ResponseWriter, r *http.Request) {
 		return []byte("secret"), nil
 	})
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && token.Raw == app.refreshToken {
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && token.Raw == app.RefreshToken {
 		fmt.Println(claims["foo"], claims["nbf"])
 	} else {
 		fmt.Println(err)
 		return
 	}
 
-	cookie := http.Cookie{Name: "Auth", Value: app.token, Expires: app.db.GenerateCookie(), HttpOnly: true}
+	cookie := http.Cookie{Name: "Auth", Value: app.Token, Expires: app.Db.GenerateCookie(), HttpOnly: true}
 	http.SetCookie(w, &cookie)
 
 	utils.RespondJSON(w, http.StatusOK, reqToken)
