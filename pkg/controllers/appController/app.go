@@ -1,4 +1,4 @@
-package cmd
+package appController
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/atqwerty/choresBackend/internal/models"
 	"github.com/atqwerty/choresBackend/internal/utils"
 	"github.com/atqwerty/choresBackend/internal/types/miscTypes"
+	"github.com/atqwerty/choresBackend/pkg/controllers/userController"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -51,9 +52,11 @@ func (app *Session) initRouters() {
 	app.Router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
 	app.Router.HandleFunc("/board/newStatus", validate(app.newStatus)).Methods("Post")
 	app.Router.HandleFunc("/board/newStatusMobile", validate(app.newStatusMobile)).Methods("Post")
-	app.Router.HandleFunc("/register", app.register).Methods("Post")
-	app.Router.HandleFunc("/login", app.login).Methods("Post")
-	app.Router.HandleFunc("/refresh", app.refresh).Methods("Get")
+
+	app.Router.HandleFunc("/register", userController.Register).Methods("Post")
+	app.Router.HandleFunc("/login", userController.Login).Methods("Post")
+	app.Router.HandleFunc("/refresh", userController.Refresh).Methods("Get")
+
 	app.Router.HandleFunc("/board/{board_id:[0-9]+}/getStatuses", validate(app.getStatuses)).Methods("Get")
 	app.Router.HandleFunc("/board/{board_id:[0-9]+}/updateStatus", validate(app.updateStatus)).Methods("Post")
 }
@@ -306,43 +309,43 @@ func (app *Session) status(w http.ResponseWriter, r *http.Request) {
 	utils.RespondJSON(w, http.StatusOK, "API is up and working!")
 }
 
-func (app *Session) register(w http.ResponseWriter, r *http.Request) {
-	user := &models.User{}
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&user); err != nil {
-		utils.BadRequest(w, "payload is required ")
-		return
-	}
-	defer r.Body.Close()
-
-	if user.Email == "" {
-		utils.BadRequest(w, "email is required")
-		return
-	}
-	if user.Name == "" {
-		utils.BadRequest(w, "name is required")
-		return
-	}
-	if user.Surname == "" {
-		utils.BadRequest(w, "surname is required")
-		return
-	}
-	if user.Password == "" {
-		utils.BadRequest(w, "password is required")
-		return
-	}
-
-	user, err := app.Db.Register(user.Email, user.Name, user.Surname, user.Password)
-	if err != nil {
-		utils.ServerError(w, err)
-		return
-	}
-
-	app.CurrentUserID = user.ID
-
-	utils.RespondJSON(w, http.StatusOK, user)
-}
+// func (app *Session) register(w http.ResponseWriter, r *http.Request) {
+// user := &models.User{}
+//
+// decoder := json.NewDecoder(r.Body)
+// if err := decoder.Decode(&user); err != nil {
+// utils.BadRequest(w, "payload is required ")
+// return
+// }
+// defer r.Body.Close()
+//
+// if user.Email == "" {
+// utils.BadRequest(w, "email is required")
+// return
+// }
+// if user.Name == "" {
+// utils.BadRequest(w, "name is required")
+// return
+// }
+// if user.Surname == "" {
+// utils.BadRequest(w, "surname is required")
+// return
+// }
+// if user.Password == "" {
+// utils.BadRequest(w, "password is required")
+// return
+// }
+//
+// user, err := app.Db.Register(user.Email, user.Name, user.Surname, user.Password)
+// if err != nil {
+// utils.ServerError(w, err)
+// return
+// }
+//
+// app.CurrentUserID = user.ID
+//
+// utils.RespondJSON(w, http.StatusOK, user)
+// }
 
 func (app *Session) login(w http.ResponseWriter, r *http.Request) {
 	user := &models.User{}
