@@ -1,4 +1,4 @@
-package cmd
+package controllers
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/atqwerty/choresBackend/internal/config"
 	"github.com/atqwerty/choresBackend/internal/models"
@@ -18,9 +17,27 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type ResponseCode int
+
+const (
+	Ok ResponseCode = 200
+	BadRequest ResponseCode = 400
+	Unauthorized ResponseCode = 401
+	NotFound ResponseCode = 404
+	ServerError ResponseCode = 500
+)
+
 const MyKey miscTypes.KeyPrototype = 0
 
-type Session miscTypes.PrototypeSession
+type Session struct {
+	Router         *mux.Router
+	Db             models.Datastore
+	UserControllerInternal UserController
+	CurrentUserID  int
+	CurrentBoardID int
+	Token          string
+	RefreshToken   string
+}
 
 type Token miscTypes.TokenPrototype
 
@@ -51,9 +68,11 @@ func (app *Session) initRouters() {
 	app.Router.HandleFunc("/board/create", validate(app.addBoard)).Methods("Post")
 	app.Router.HandleFunc("/board/newStatus", validate(app.newStatus)).Methods("Post")
 	app.Router.HandleFunc("/board/newStatusMobile", validate(app.newStatusMobile)).Methods("Post")
+
 	app.Router.HandleFunc("/register", app.register).Methods("Post")
 	app.Router.HandleFunc("/login", app.login).Methods("Post")
 	app.Router.HandleFunc("/refresh", app.refresh).Methods("Get")
+
 	app.Router.HandleFunc("/board/{board_id:[0-9]+}/getStatuses", validate(app.getStatuses)).Methods("Get")
 	app.Router.HandleFunc("/board/{board_id:[0-9]+}/updateStatus", validate(app.updateStatus)).Methods("Post")
 }
@@ -307,75 +326,77 @@ func (app *Session) status(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Session) register(w http.ResponseWriter, r *http.Request) {
-	user := &models.User{}
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&user); err != nil {
-		utils.BadRequest(w, "payload is required ")
-		return
-	}
-	defer r.Body.Close()
-
-	if user.Email == "" {
-		utils.BadRequest(w, "email is required")
-		return
-	}
-	if user.Name == "" {
-		utils.BadRequest(w, "name is required")
-		return
-	}
-	if user.Surname == "" {
-		utils.BadRequest(w, "surname is required")
-		return
-	}
-	if user.Password == "" {
-		utils.BadRequest(w, "password is required")
-		return
-	}
-
-	user, err := app.Db.Register(user.Email, user.Name, user.Surname, user.Password)
-	if err != nil {
-		utils.ServerError(w, err)
-		return
-	}
-
-	app.CurrentUserID = user.ID
-
-	utils.RespondJSON(w, http.StatusOK, user)
+	app.UserControllerInternal.Register(w, r)
+	//	user := &models.User{}
+	//
+	//	decoder := json.NewDecoder(r.Body)
+	//	if err := decoder.Decode(&user); err != nil {
+	//		utils.BadRequest(w, "payload is required ")
+	//		return
+	//	}
+	//	defer r.Body.Close()
+	//
+	//	if user.Email == "" {
+	//		utils.BadRequest(w, "email is required")
+	//		return
+	//	}
+	//	if user.Name == "" {
+	//		utils.BadRequest(w, "name is required")
+	//		return
+	//	}
+	//	if user.Surname == "" {
+	//		utils.BadRequest(w, "surname is required")
+	//		return
+	//	}
+	//	if user.Password == "" {
+	//		utils.BadRequest(w, "password is required")
+	//		return
+	//	}
+	//
+	//	user, err := app.Db.Register(user.Email, user.Name, user.Surname, user.Password)
+	//	if err != nil {
+	//		utils.ServerError(w, err)
+	//		return
+	//	}
+	//
+	//	app.CurrentUserID = user.ID
+	//
+	//	utils.RespondJSON(w, http.StatusOK, user)
 }
 
 func (app *Session) login(w http.ResponseWriter, r *http.Request) {
-	user := &models.User{}
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&user); err != nil {
-		utils.BadRequest(w, "payload is required")
-		return
-	}
-	defer r.Body.Close()
-
-	if user.Email == "" {
-		utils.BadRequest(w, "email is missing")
-		return
-	}
-	if user.Password == "" {
-		utils.BadRequest(w, "password is missing")
-		return
-	}
-
-	user, err := app.Db.Login(user.Email, user.Password)
-	if err != nil {
-		utils.ServerError(w, err)
-		return
-	}
-
-	app.CurrentUserID = user.ID
-	app.Token = user.Token
-	app.RefreshToken = user.RefreshToken
-
-	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
-	http.SetCookie(w, &cookie)
-	utils.RespondJSON(w, http.StatusOK, user)
+	app.UserControllerInternal.Login(w, r)
+	//	user := &models.User{}
+	//
+	//	decoder := json.NewDecoder(r.Body)
+	//	if err := decoder.Decode(&user); err != nil {
+	//		utils.BadRequest(w, "payload is required")
+	//		return
+	//	}
+	//	defer r.Body.Close()
+	//
+	//	if user.Email == "" {
+	//		utils.BadRequest(w, "email is missing")
+	//		return
+	//	}
+	//	if user.Password == "" {
+	//		utils.BadRequest(w, "password is missing")
+	//		return
+	//	}
+	//
+	//	user, err := app.Db.Login(user.Email, user.Password)
+	//	if err != nil {
+	//		utils.ServerError(w, err)
+	//		return
+	//	}
+	//
+	//	app.CurrentUserID = user.ID
+	//	app.Token = user.Token
+	//	app.RefreshToken = user.RefreshToken
+	//
+	//	cookie := http.Cookie{Name: "Auth", Value: user.Token, Expires: user.ExpireCookie, HttpOnly: true}
+	//	http.SetCookie(w, &cookie)
+	//	utils.RespondJSON(w, http.StatusOK, user)
 }
 
 func validate(page http.HandlerFunc) http.HandlerFunc {
@@ -408,30 +429,38 @@ func validate(page http.HandlerFunc) http.HandlerFunc {
 }
 
 func (app *Session) refresh(w http.ResponseWriter, r *http.Request) {
-	reqToken := r.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	reqToken = strings.Replace(splitToken[1], "\n", "", -1)
+	app.UserControllerInternal.Refresh(w, r)
+	//	reqToken := r.Header.Get("Authorization")
+	//	splitToken := strings.Split(reqToken, "Bearer ")
+	//	reqToken = strings.Replace(splitToken[1], "\n", "", -1)
+	//
+	//	token, err := jwt.Parse(reqToken, func(token *jwt.Token) (interface{}, error) {
+	//		// Don't forget to validate the alg is what you expect:
+	//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+	//			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+	//		}
+	//
+	//		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+	//		return []byte("secret"), nil
+	//	})
+	//
+	//	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && token.Raw == app.RefreshToken {
+	//		fmt.Println(claims["foo"], claims["nbf"])
+	//	} else {
+	//		fmt.Println(err)
+	//		return
+	//	}
+	//
+	//	cookie := http.Cookie{Name: "Auth", Value: app.Token, Expires: app.Db.GenerateCookie(), HttpOnly: true}
+	//	http.SetCookie(w, &cookie)
+	//
+	//	utils.RespondJSON(w, http.StatusOK, reqToken)
+	//	return
+}
 
-	token, err := jwt.Parse(reqToken, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
+func errorValidator(err error, errorCause int) {
+	switch errorCause {
+		//case BadRequest:
 
-		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-		return []byte("secret"), nil
-	})
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && token.Raw == app.RefreshToken {
-		fmt.Println(claims["foo"], claims["nbf"])
-	} else {
-		fmt.Println(err)
-		return
 	}
-
-	cookie := http.Cookie{Name: "Auth", Value: app.Token, Expires: app.Db.GenerateCookie(), HttpOnly: true}
-	http.SetCookie(w, &cookie)
-
-	utils.RespondJSON(w, http.StatusOK, reqToken)
-	return
 }
